@@ -1,49 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8"/>
-        <title>Hack the Grid</title>
-        <meta name="viewport" content="width=device-width", initial-scale="1"/>
+<head>
+  <meta charset="UTF-8" />
+  <title>Hack the Grid</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="src/css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>HACK THE GRID</h1>
+    <p class="subtitle">Rotate the circuit tiles to connect <span class="green">SOURCE</span> to <span class="pink">TARGET</span>.</p>
+  </header>
 
-        <link rel="stylesheet" href="css/style.css"/>
-    </head>
-    <body>
-        <div class="page">
-            <header class="header">
-                <div class="logo">HACK <span>THE GRID</span></div>
-                <div class="subtitle">Rotate the tiles. Connect <span class="green">SOURCE</span> to <span class="pink">TARGET</span>.</div>
-            </header>
-
-            <main class="main">
-                <section class="panel panel-left">
-                    <div class="info-row">
-                        <div class="label">Level</div>
-                        <div id="levelName" class="value">1: Tutorial</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="label">Time</div>
-                        <div id="timeValue" class="value">0.0s</div>
-                    </div>
-                    <div class="status" id="statusText">
-                        Connect <span class="green">GREEN</span> to <span class="pink">PINK</span>.
-                    </div>
-                    <div class="controls">
-                        <button id="btnPrev" class="btn small">◀ Prev</button>
-                        <button id="btnReset" class="btn">Shuffle</button>
-                        <button id="btnNext" class="btn small">Next ▶</button>
-                    </div>
-                </section>
-
-                <section class="panel panel-grid">
-                    <div id="grid" class="grid"></div>
-                </section>
-            </main>
-
-            <footer class="footer">
-                <span class="hint">Hint: click tiles to rotate them. The glowing line shows the active path.</span>
-            </footer>
+  <main class="app">
+    <section id="hud" class="hud">
+      <div class="hud-left">
+        <div id="level" class="hud-level">Level 1: Tutorial</div>
+        <div id="status" class="hud-status">
+          Connect <strong>GREEN</strong> to <strong>PINK</strong>.
         </div>
+      </div>
 
-        <script type="module" src="js/main.js"></script>
-    </body>
+      <div class="hud-right">
+        <div class="hud-stat">
+          <span class="label">Moves</span>
+          <span id="moves" class="value">0</span>
+        </div>
+        <div class="hud-stat">
+          <span class="label">Time</span>
+          <span id="time" class="value">0.0s</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <button id="prevLevelBtn" class="btn secondary">◀ Prev</button>
+      <button id="resetBtn" class="btn">Shuffle</button>
+      <button id="nextLevelBtn" class="btn secondary">Next ▶</button>
+    </section>
+
+    <section id="gridContainer" class="grid-container">
+      <div id="grid" class="grid"></div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span>Made with HTML, CSS &amp; JavaScript</span>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="src/js/levels.js" defer></script>
+  <script src="src/js/game.js" defer></script>
+</body>
 </html>
