@@ -1,10 +1,8 @@
-// src/js/levels.js
-
 /**
  * Characters:
  *  . = empty
- *  S = source
- *  T = target
+ *  S = source (fixed vertical)
+ *  T = target (fixed vertical)
  *  | = vertical straight
  *  - = horizontal straight
  *  L = corner up-right
@@ -14,6 +12,7 @@
  */
 
 const LEVELS = [
+  // Level 1
   {
     id: 1,
     name: "Tutorial Link",
@@ -27,44 +26,100 @@ const LEVELS = [
     ],
     parMoves: 4,
   },
+
+  // Level 2
   {
     id: 2,
     name: "Offset Signal",
     size: 5,
     layout: [
       ".....",
-      ".S-..",
-      ".|L..",
-      ".|.T.",
+      ".S|..",  
+      ".LJ..",  
+      "..T..", 
       ".....",
     ],
     parMoves: 8,
   },
+
+  // Level 3
   {
     id: 3,
     name: "Twisted Loop",
     size: 5,
     layout: [
-      "S-7..",
-      ".|.L.",
-      ".L.JT",
-      ".J-..",
-      ".....",
+      "..S..",  
+      "..|..",  
+      "..L-R",  
+      "....|",  
+      "....T",  
     ],
-    parMoves: 10,
+    parMoves: 12,
   },
+
+  // Level 4
   {
     id: 4,
     name: "Crossed Paths",
     size: 6,
     layout: [
-      "S-7...",
-      ".|.L..",
-      ".L-JT.",
-      ".|.|..",
-      ".J-7..",
-      "......",
+      ".S....",  
+      ".|....",  
+      ".L-J..",  
+      "...|..",  
+      "...|..",  
+      "...T..",  
     ],
-    parMoves: 14,
+    parMoves: 16,
+  },
+
+  // Level 5
+  {
+    id: 5,
+    name: "Signal Maze",
+    size: 6,
+    layout: [
+      "..S...",
+      "..|...",
+      "..L--R",
+      ".....|",
+      "...J-7",
+      "...T..",
+    ],
+    parMoves: 18,
+  },
+
+  // Level 6
+  {
+    id: 6,
+    name: "Long Circuit",
+    size: 7,
+    layout: [
+      "...S...",
+      "...|...",
+      "...L--R",
+      "......|",
+      "......|",
+      "...7--7",
+      "...T...",
+    ],
+    parMoves: 22,
+  },
+
+  // Level 7
+  {
+    id: 7,
+    name: "Deep Access",
+    size: 7,
+    layout: [
+      ".S.....",
+      ".|.....",
+      ".L--R..",
+      "....|..",
+      "....L-J",
+      "......|",
+      "......T",
+    ],
+    parMoves: 26,
   },
 ];

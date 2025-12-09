@@ -120,7 +120,8 @@ const GameState = {
 document.addEventListener("DOMContentLoaded", () => {
   cacheDom();
   bindEvents();
-  loadLevel(0);
+  showTitleScreen()
+  /*loadLevel(0);*/
 });
 
 function cacheDom() {
@@ -136,6 +137,9 @@ function cacheDom() {
   GameState.dom.helpBtn = document.getElementById("helpBtn");
   GameState.dom.closeModalBtn = document.getElementById("closeModalBtn");
   GameState.dom.gotItBtn = document.getElementById("gotItBtn");
+  GameState.dom.titleScreen = document.getElementById("titleScreen");
+  GameState.dom.playBtn = document.getElementById("playBtn");
+  GameState.dom.titleHelpBtn = document.getElementById("titleHelpBtn");
 }
 
 function bindEvents() {
@@ -157,6 +161,15 @@ function bindEvents() {
 
    // open modal
   GameState.dom.helpBtn.addEventListener("click", () => {
+    openHowToModal();
+  });
+
+  // title screen buttons
+  GameState.dom.playBtn.addEventListener("click", () => {
+    startGameFromTitle();
+  });
+
+  GameState.dom.titleHelpBtn.addEventListener("click", () => {
     openHowToModal();
   });
 
@@ -183,6 +196,19 @@ function bindEvents() {
   });
 }
 
+function showTitleScreen() {
+  GameState.dom.titleScreen.classList.remove("hidden");
+}
+
+function hideTitleScreen() {
+  GameState.dom.titleScreen.classList.add("hidden");
+}
+
+function startGameFromTitle() {
+  hideTitleScreen();
+  loadLevel(0);
+}
+
 function loadLevel(index) {
   clearTimer();
 
@@ -198,6 +224,9 @@ function loadLevel(index) {
   GameState.dom.statusText.innerHTML =
     "Connect <strong>GREEN</strong> to <strong>PINK</strong>.";
   GameState.dom.timeValue.textContent = "0.0s";
+  if (GameState.dom.parValue) {
+    GameState.dom.parValue.textContent = typeof level.parMoves === "number" ? String(level.parMoves) : "–";
+  }
 
   GameState.dom.prevLevelBtn.disabled = index === 0;
   GameState.dom.nextLevelBtn.disabled = index === LEVELS.length - 1;
