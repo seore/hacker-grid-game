@@ -30,6 +30,10 @@
           <span class="label">Time</span>
           <span id="time" class="value">0.0s</span>
         </div>
+        <div class="hud-stat">
+          <span class="label">Par</span>
+          <span id="par" class="value">-</span>
+        </div>
       </div>
     </section>
 
@@ -37,11 +41,42 @@
       <button id="prevLevelBtn" class="btn secondary">◀ Prev</button>
       <button id="resetBtn" class="btn">Shuffle</button>
       <button id="nextLevelBtn" class="btn secondary">Next ▶</button>
+      <button id="helpBtn" class="btn secondary">How to Play</button>
     </section>
 
     <section id="gridContainer" class="grid-container">
       <div id="grid" class="grid"></div>
     </section>
+
+    <div id="howToMode" class="modal-backdrop hidden">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>How to Play</h2>
+          <button id="closeModalBtn" class="icon-btn" aria-label="Close">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>
+            Your goal is to create a continuous circuit from the
+            <span class="accent-green">SOURCE</span> (green) to the
+            <span class="accent-pink">TARGET</span> (pink).
+          </p>
+          <ul>
+            <li>Click on a tile to rotate it 90° clockwise.</li>
+            <li>You <strong>cannot</strong> rotate the source, target, or faded empty tiles.</li>
+            <li>When a valid path exists, the connected tiles will glow and access is granted.</li>
+          </ul>
+          <p>
+            Try to solve each level in as few moves as possible —
+            beat or match the <strong>Par</strong> shown in the HUD.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button id="gotItBtn" class="btn">Got it</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <footer class="app-footer">

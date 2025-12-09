@@ -132,6 +132,10 @@ function cacheDom() {
   GameState.dom.resetBtn = document.getElementById("resetBtn");
   GameState.dom.prevLevelBtn = document.getElementById("prevLevelBtn");
   GameState.dom.nextLevelBtn = document.getElementById("nextLevelBtn");
+  GameState.dom.howToModal = document.getElementById("howToMode");
+  GameState.dom.helpBtn = document.getElementById("helpBtn");
+  GameState.dom.closeModalBtn = document.getElementById("closeModalBtn");
+  GameState.dom.gotItBtn = document.getElementById("gotItBtn");
 }
 
 function bindEvents() {
@@ -148,6 +152,33 @@ function bindEvents() {
   GameState.dom.nextLevelBtn.addEventListener("click", () => {
     if (GameState.currentLevelIndex < LEVELS.length - 1) {
       loadLevel(GameState.currentLevelIndex + 1);
+    }
+  });
+
+   // open modal
+  GameState.dom.helpBtn.addEventListener("click", () => {
+    openHowToModal();
+  });
+
+  // close modal buttons
+  GameState.dom.closeModalBtn.addEventListener("click", () => {
+    closeHowToModal();
+  });
+  GameState.dom.gotItBtn.addEventListener("click", () => {
+    closeHowToModal();
+  });
+
+  // click outside modal to close
+  GameState.dom.howToModal.addEventListener("click", (e) => {
+    if (e.target === GameState.dom.howToModal) {
+      closeHowToModal();
+    }
+  });
+
+  // Esc to close
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeHowToModal();
     }
   });
 }
@@ -429,4 +460,12 @@ function clearTimer() {
     cancelAnimationFrame(GameState.timerId);
     GameState.timerId = null;
   }
+}
+
+function openHowToModal() {
+  GameState.dom.howToModal.classList.remove("hidden");
+}
+
+function closeHowToModal() {
+  GameState.dom.howToModal.classList.add("hidden");
 }
