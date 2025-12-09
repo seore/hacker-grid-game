@@ -36,6 +36,49 @@ body {
   display: none !important;
 }
 
+.title-backdrop {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, #0c1635 0, #02030a 55%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+
+.title-screen {
+  max-width: 460px;
+  width: 90%;
+  background: rgba(5, 11, 22, 0.96);
+  border-radius: 24px;
+  border: 1px solid rgba(53, 240, 255, 0.5);
+  box-shadow: 0 0 40px rgba(0, 255, 255, 0.35);
+  padding: 24px 20px 18px;
+  text-align: center;
+  backdrop-filter: blur(16px);
+  animation: modalIn 0.25s ease-out;
+}
+
+.title-screen h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.title-subtitle {
+  margin: 12px 0 18px;
+  font-size: 0.9rem;
+  color: var(--text-soft);
+}
+
+.title-btn {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .app-header {
   text-align: center;
   padding: 24px 16px 8px;
