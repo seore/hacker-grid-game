@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8"/>
+        <title>Hack the Grid</title>
+        <meta name="viewport" content="width=device-width", initial-scale="1"/>
+
+        <link rel="stylesheet" href="css/style.css"/>
+    </head>
+    <body>
+        <div class="page">
+            <header class="header">
+                <div class="logo">HACK <span>THE GRID</span></div>
+                <div class="subtitle">Rotate the tiles. Connect <span class="green">SOURCE</span> to <span class="pink">TARGET</span>.</div>
+            </header>
+
+            <main class="main">
+                <section class="panel panel-left">
+                    <div class="info-row">
+                        <div class="label">Level</div>
+                        <div id="levelName" class="value">1: Tutorial</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="label">Time</div>
+                        <div id="timeValue" class="value">0.0s</div>
+                    </div>
+                    <div class="status" id="statusText">
+                        Connect <span class="green">GREEN</span> to <span class="pink">PINK</span>.
+                    </div>
+                    <div class="controls">
+                        <button id="btnPrev" class="btn small">◀ Prev</button>
+                        <button id="btnReset" class="btn">Shuffle</button>
+                        <button id="btnNext" class="btn small">Next ▶</button>
+                    </div>
+                </section>
+
+                <section class="panel panel-grid">
+                    <div id="grid" class="grid"></div>
+                </section>
+            </main>
+
+            <footer class="footer">
+                <span class="hint">Hint: click tiles to rotate them. The glowing line shows the active path.</span>
+            </footer>
+        </div>
+
+        <script type="module" src="js/main.js"></script>
+    </body>
+</html>
