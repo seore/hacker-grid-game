@@ -14,15 +14,72 @@
 
 body {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: radial-gradient(circle at 10% 0, #182042 0, #050716 40%, #000 100%);
   color: var(--text-main);
   font-family: "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  padding: 1.5rem;
-  transition: background 0.3s ease-out;
 }
+
+/* GENERIC SCREEN WRAPPER (full viewport) */
+
+.screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.screen-active {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.screen-hidden {
+  opacity: 0;
+  transform: scale(0.96);
+  pointer-events: none;
+}
+
+/* HOME / TITLE SCREEN */
+
+.home-card {
+  max-width: 420px;
+  width: 90%;
+  padding: 1.4rem 1.6rem 1.6rem;
+  border-radius: 26px;
+  background: radial-gradient(circle at 0 0, #151834 0, #050716 65%);
+  border: 1px solid rgba(0, 245, 255, 0.4);
+  box-shadow:
+    0 0 40px rgba(0, 245, 255, 0.5),
+    0 0 80px rgba(255, 63, 142, 0.25);
+}
+
+.home-title {
+  font-size: 1.3rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.home-tagline {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  margin-bottom: 1.1rem;
+}
+
+.home-start-btn {
+  width: 100%;
+  justify-content: center;
+  font-size: 0.8rem;
+  padding: 0.5rem 1rem;
+}
+
+/* MAIN GAME SHELL */
 
 .app-shell {
   width: 100%;
@@ -54,91 +111,6 @@ body {
 .app-inner {
   position: relative;
   z-index: 1;
-}
-
-/* START OVERLAY */
-
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(circle at 20% 0, rgba(5, 7, 30, 0.96), rgba(1, 2, 10, 0.98));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  backdrop-filter: blur(18px);
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.35s ease, transform 0.35s ease;
-}
-
-.overlay.overlay-hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-10px);
-}
-
-.overlay-panel {
-  max-width: 420px;
-  width: 90%;
-  border-radius: 26px;
-  padding: 1.4rem 1.5rem 1.6rem;
-  background: radial-gradient(circle at 0 0, #151834 0, #050716 60%);
-  border: 1px solid rgba(0, 245, 255, 0.4);
-  box-shadow:
-    0 0 40px rgba(0, 245, 255, 0.5),
-    0 0 80px rgba(255, 63, 142, 0.3);
-  text-align: left;
-}
-
-.overlay-title {
-  font-size: 1.4rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  margin-bottom: 0.35rem;
-}
-
-.overlay-tagline {
-  font-size: 0.9rem;
-  color: var(--text-dim);
-  margin-bottom: 0.8rem;
-}
-
-.overlay-features {
-  list-style: none;
-  margin-bottom: 1rem;
-  font-size: 0.83rem;
-  color: #d6deff;
-}
-
-.overlay-features li {
-  margin-bottom: 0.3rem;
-  position: relative;
-  padding-left: 1rem;
-}
-
-.overlay-features li::before {
-  content: "✦";
-  position: absolute;
-  left: 0;
-  top: 0;
-  font-size: 0.8rem;
-  color: #00f5ff;
-}
-
-.overlay-start-btn {
-  width: 100%;
-  justify-content: center;
-  margin-bottom: 0.75rem;
-  font-size: 0.82rem;
-  padding: 0.5rem 1rem;
-}
-
-.overlay-sub {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: rgba(153, 162, 210, 0.9);
 }
 
 /* HEADER */
@@ -245,7 +217,7 @@ body {
   margin-top: 0.15rem;
 }
 
-/* MAIN CONTENT */
+/* LAYOUT */
 
 .layout {
   display: grid;
@@ -275,7 +247,6 @@ body {
   box-shadow: 0 0 40px rgba(0, 255, 255, 0.12);
   padding: 1.1rem 1.1rem 1.25rem;
   position: relative;
-  transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out;
 }
 
 .grid-card::before {
@@ -321,7 +292,6 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out;
 }
 
 .pattern-badge-dot {
@@ -330,7 +300,6 @@ body {
   border-radius: 999px;
   background: #00f5ff;
   box-shadow: 0 0 8px rgba(0, 245, 255, 0.7);
-  transition: background 0.3s ease-out, box-shadow 0.3s ease-out;
 }
 
 /* GRID */
@@ -341,7 +310,12 @@ body {
   border-radius: 22px;
   border: 1px solid rgba(0, 245, 255, 0.12);
   box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.7);
-  transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.grid-wrapper.fade-out {
+  opacity: 0;
+  transform: scale(0.92);
 }
 
 .grid {
@@ -437,17 +411,19 @@ body {
 
 /* ACTIVE COLORS */
 
-.tile.active-blue .tile-ring {
+.tile.movable.active-blue .tile-ring {
   border-color: rgba(0, 245, 255, 0.95);
   box-shadow: 0 0 20px rgba(0, 245, 255, 0.7);
 }
 
-.tile.active-blue .tile-notch {
+.tile.movable.active-blue .tile-notch {
   background: #00f5ff;
   box-shadow:
     0 0 10px rgba(0, 245, 255, 0.75),
     0 0 24px rgba(0, 245, 255, 0.6);
 }
+
+/* green & pink are static endpoints ONLY (never movable) */
 
 .tile.active-green .tile-ring {
   border-color: rgba(123, 255, 106, 1);
@@ -516,7 +492,6 @@ body {
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out, background 0.3s ease-out;
 }
 
 .btn span {
@@ -556,7 +531,7 @@ body {
   opacity: 0.8;
 }
 
-/* SIDEBAR / DESCRIPTION */
+/* SIDEBAR */
 
 .side-panel {
   background: radial-gradient(circle at 0 0, #151832 0, #050716 55%);
@@ -565,7 +540,6 @@ body {
   padding: 1rem 1.1rem 1.15rem;
   position: relative;
   overflow: hidden;
-  transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out;
 }
 
 .side-panel::before {
@@ -636,7 +610,6 @@ body {
   font-size: 0.8rem;
   margin-top: 0.2rem;
   color: #ffe9f5;
-  transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out, background 0.3s ease-out;
 }
 
 .timer-chip-label {
@@ -664,29 +637,11 @@ body {
   color: rgba(189, 247, 255, 0.95);
 }
 
-/* DIFFICULTY THEMES */
+/* THEMES */
 
 body.theme-easy .app-shell {
   border-color: rgba(0, 245, 255, 0.4);
   box-shadow: 0 0 45px rgba(0, 245, 255, 0.35);
-}
-
-body.theme-easy .grid-card,
-body.theme-easy .grid-wrapper {
-  border-color: rgba(0, 245, 255, 0.35);
-  box-shadow: 0 0 40px rgba(0, 245, 255, 0.18);
-}
-
-body.theme-easy .pattern-badge,
-body.theme-easy #difficultyPill {
-  border-color: rgba(0, 245, 255, 0.7);
-  box-shadow: 0 0 18px rgba(0, 245, 255, 0.3);
-}
-
-body.theme-easy .pattern-badge-dot,
-body.theme-easy .feature-dot {
-  background: #00f5ff;
-  box-shadow: 0 0 10px rgba(0, 245, 255, 0.9);
 }
 
 body.theme-medium .app-shell {
@@ -694,56 +649,14 @@ body.theme-medium .app-shell {
   box-shadow: 0 0 45px rgba(123, 255, 106, 0.3);
 }
 
-body.theme-medium .grid-card,
-body.theme-medium .grid-wrapper {
-  border-color: rgba(123, 255, 106, 0.4);
-  box-shadow: 0 0 40px rgba(123, 255, 106, 0.18);
-}
-
-body.theme-medium .pattern-badge,
-body.theme-medium #difficultyPill {
-  border-color: rgba(123, 255, 106, 0.7);
-  box-shadow: 0 0 18px rgba(123, 255, 106, 0.35);
-  background: radial-gradient(circle at 0 0, rgba(123, 255, 106, 0.28), transparent 65%);
-}
-
-body.theme-medium .pattern-badge-dot,
-body.theme-medium .feature-dot {
-  background: #7bff6a;
-  box-shadow: 0 0 10px rgba(123, 255, 106, 0.9);
-}
-
 body.theme-hard .app-shell {
   border-color: rgba(255, 63, 142, 0.4);
   box-shadow: 0 0 45px rgba(255, 63, 142, 0.35);
 }
 
-body.theme-hard .grid-card,
-body.theme-hard .grid-wrapper {
-  border-color: rgba(255, 63, 142, 0.4);
-  box-shadow: 0 0 40px rgba(255, 63, 142, 0.2);
-}
-
-body.theme-hard .pattern-badge,
-body.theme-hard #difficultyPill {
-  border-color: rgba(255, 63, 142, 0.8);
-  box-shadow: 0 0 18px rgba(255, 63, 142, 0.4);
-  background: radial-gradient(circle at 0 0, rgba(255, 63, 142, 0.3), transparent 65%);
-}
-
-body.theme-hard .pattern-badge-dot,
-body.theme-hard .feature-dot {
-  background: #ff3f8e;
-  box-shadow: 0 0 10px rgba(255, 63, 142, 0.95);
-}
-
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 @keyframes solvedPulse {

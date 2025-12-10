@@ -12,131 +12,129 @@
   <link rel="stylesheet" href="src/css/style.css" />
 </head>
 <body>
-  <!-- START MENU OVERLAY -->
-  <div id="startOverlay" class="overlay">
-    <div class="overlay-panel">
-      <div class="overlay-title">HACK THE GRID/div>
-      <p class="overlay-tagline">Minimal cyber-puzzle. Neon clean. Brain sharp.</p>
+  <!-- HOME / TITLE SCREEN -->
+  <div id="homeScreen" class="screen screen-active">
+    <div class="home-card">
+      <div class="home-title">HACK THE GRID</div>
+      <div class="home-tagline">
+        Minimal cyber-puzzle. Neon clean.<br />
+        Brain sharp.
+      </div>
 
-      <ul class="overlay-features">
-        <li>Connect nodes with clean glowing paths.</li>
-        <li>Rotate tiles to align every active node.</li>
-        <li>Beat the clock as difficulty ramps up.</li>
-      </ul>
-
-      <button id="startBtn" class="btn overlay-start-btn">
+      <button id="startBtn" class="btn home-start-btn">
         ✦ START HACK
       </button>
-
-      <p class="overlay-sub">Use mouse / trackpad · Rotate glowing tiles · Win before time hits zero.</p>
     </div>
   </div>
 
-  <div class="app-shell">
-    <div class="app-inner">
-      <!-- HEADER / HUD -->
-      <header class="hud-header">
-        <div class="brand-block">
-          <div class="brand-icon"></div>
-          <div class="brand-text">
-            <h1>HACK THE GRID</h1>
-            <span>Minimal cyber-puzzle</span>
+  <!-- MAIN GAME SCREEN -->
+  <div id="gameScreen" class="screen screen-hidden">
+    <div class="app-shell">
+      <div class="app-inner">
+        <!-- HEADER / HUD -->
+        <header class="hud-header">
+          <div class="brand-block">
+            <div class="brand-icon"></div>
+            <div class="brand-text">
+              <h1>HACK THE GRID</h1>
+              <span>Minimal cyber-puzzle</span>
+            </div>
           </div>
-        </div>
 
-        <div class="hud-stats">
-          <div class="pill" id="difficultyPill">
-            <small>Difficulty</small>
-            <span id="difficultyLabel">Easy</span>
+          <div class="hud-stats">
+            <div class="pill" id="difficultyPill">
+              <small>Difficulty</small>
+              <span id="difficultyLabel">Easy</span>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Level</div>
+              <div class="stat-value" id="levelLabel">01 · Initiate</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Moves</div>
+              <div class="stat-value" id="movesLabel">0</div>
+            </div>
           </div>
-          <div class="stat">
-            <div class="stat-label">Level</div>
-            <div class="stat-value" id="levelLabel">01 · Initiate</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">Moves</div>
-            <div class="stat-value" id="movesLabel">0</div>
-          </div>
-        </div>
-      </header>
+        </header>
 
-      <main class="layout">
-        <!-- GRID SIDE -->
-        <section class="grid-card" aria-label="Puzzle grid">
-          <div class="grid-card-header">
-            <h2>Node Alignment</h2>
-            <div class="pattern-badges">
-              <div class="pattern-badge">
-                <span class="pattern-badge-dot"></span>
-                PATTERN <span id="patternIndex">01</span>
+        <main class="layout">
+          <!-- GRID SIDE -->
+          <section class="grid-card" aria-label="Puzzle grid">
+            <div class="grid-card-header">
+              <h2>Node Alignment</h2>
+              <div class="pattern-badges">
+                <div class="pattern-badge">
+                  <span class="pattern-badge-dot"></span>
+                  PATTERN <span id="patternIndex">01</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="grid-wrapper">
-            <div class="grid" id="grid"></div>
-          </div>
-
-          <div class="grid-controls">
-            <div class="btn-row">
-              <button class="btn btn-secondary" id="prevBtn">
-                ◀ <span>Prev</span>
-              </button>
-              <button class="btn" id="shuffleBtn">
-                ✦ <span>Shuffle</span>
-              </button>
-              <button class="btn btn-secondary" id="nextBtn">
-                <span>Next</span> ▶
-              </button>
+            <div class="grid-wrapper">
+              <div class="grid" id="grid"></div>
             </div>
-            <div class="hint-text">
-              Click glowing tiles to rotate. Align all active nodes to the same direction.
-            </div>
-          </div>
-        </section>
 
-        <!-- SIDEBAR / COPY -->
-        <aside class="side-panel">
-          <div class="side-panel-inner">
-            <div class="tagline-heading">Neon-clean. Brain-sharp.</div>
-            <h2>Connect nodes. Rotate tiles. Beat the clock.</h2>
-            <p>
-              Hack-the-Grid is a beautiful, simple, addictive cyber-puzzle.
-              Rotate glowing nodes to snap the circuitry into place before the
-              system locks you out.
-            </p>
-
-            <ul class="feature-list">
-              <li>
-                <span class="feature-dot"></span>
-                Connect nodes across the grid with clean geometric paths.
-              </li>
-              <li>
-                <span class="feature-dot"></span>
-                Rotate tiles to find the perfect orientation and flow.
-              </li>
-              <li>
-                <span class="feature-dot"></span>
-                Timed challenges keep every hack tight and tense.
-              </li>
-            </ul>
-
-            <div class="timer-chip">
-              <div>
-                <div class="timer-chip-label">Time Left</div>
-                <div class="timer-display" id="timerDisplay">60.0s</div>
+            <div class="grid-controls">
+              <div class="btn-row">
+                <button class="btn btn-secondary" id="prevBtn">
+                  ◀ <span>Prev</span>
+                </button>
+                <button class="btn" id="shuffleBtn">
+                  ✦ <span>Shuffle</span>
+                </button>
+                <button class="btn btn-secondary" id="nextBtn">
+                  <span>Next</span> ▶
+                </button>
               </div>
-              <button class="btn btn-danger" id="restartBtn" style="font-size:0.7rem;padding:0.25rem 0.7rem;">
-                Reset
-              </button>
+              <div class="hint-text">
+                Click cyan tiles to rotate. Green &amp; pink nodes stay locked.
+              </div>
             </div>
+          </section>
 
-            <div class="footer-note">
-              Made with <span>HTML</span>, <span>CSS</span> &amp; <span>JavaScript</span>.
+          <!-- SIDEBAR / COPY -->
+          <aside class="side-panel">
+            <div class="side-panel-inner">
+              <div class="tagline-heading">Neon-clean. Brain-sharp.</div>
+              <h2>Connect nodes. Rotate tiles. Beat the clock.</h2>
+              <p>
+                Hack-the-Grid is a beautiful, simple, addictive cyber-puzzle.
+                Rotate glowing tiles to snap the circuitry into place before
+                the system locks you out.
+              </p>
+
+              <ul class="feature-list">
+                <li>
+                  <span class="feature-dot"></span>
+                  Static source &amp; target nodes anchor each puzzle.
+                </li>
+                <li>
+                  <span class="feature-dot"></span>
+                  Only cyan tiles move—plan your rotations carefully.
+                </li>
+                <li>
+                  <span class="feature-dot"></span>
+                  Timed challenges keep every hack tight and tense.
+                </li>
+              </ul>
+
+              <div class="timer-chip">
+                <div>
+                  <div class="timer-chip-label">Time Left</div>
+                  <div class="timer-display" id="timerDisplay">60.0s</div>
+                </div>
+                <button class="btn btn-danger" id="restartBtn" style="font-size:0.7rem;padding:0.25rem 0.7rem;">
+                  Reset
+                </button>
+              </div>
+
+              <div class="footer-note">
+                Made with <span>HTML</span>, <span>CSS</span> &amp; <span>JavaScript</span>.
+              </div>
             </div>
-          </div>
-        </aside>
-      </main>
+          </aside>
+        </main>
+      </div>
     </div>
   </div>
 
