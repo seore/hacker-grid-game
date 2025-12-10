@@ -1,349 +1,251 @@
-// main.js
-import * as THREE from "https://unpkg.com/three@0.170.0/build/three.module.js";
+// --- BASIC PUZZLE STATE -------------------------------------------------
 
-const container = document.getElementById("game-container");
-const statusEl = document.getElementById("status");
-const resetButton = document.getElementById("resetButton");
+    const gridElement = document.getElementById("grid");
+    const movesLabel = document.getElementById("movesLabel");
+    const levelLabel = document.getElementById("levelLabel");
+    const patternIndexLabel = document.getElementById("patternIndex");
+    const timerDisplay = document.getElementById("timerDisplay");
 
-// Basic Three.js setup
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x050712);
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+    const restartBtn = document.getElementById("restartBtn");
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
-container.appendChild(renderer.domElement);
+    const GRID_SIZE = 5;
+    const MAX_ROTATION = 3; // 0, 1, 2, 3 -> 0°, 90°, 180°, 270°
+    const BASE_TIME = 60; // seconds
 
-// Orthographic camera for a flat, UI-like look
-const aspect = container.clientWidth / container.clientHeight;
-const frustumSize = 10;
-const camera = new THREE.OrthographicCamera(
-  (frustumSize * aspect) / -2,
-  (frustumSize * aspect) / 2,
-  frustumSize / 2,
-  frustumSize / -2,
-  0.1,
-  100
-);
-camera.position.set(0, 0, 10);
-camera.lookAt(0, 0, 0);
+    let tiles = [];
+    let patternIndex = 0;
+    let moves = 0;
+    let timer = null;
+    let timeRemaining = BASE_TIME;
 
-// Lights
-const ambient = new THREE.AmbientLight(0x88aaff, 0.7);
-scene.add(ambient);
-const dir = new THREE.DirectionalLight(0xffffff, 0.7);
-dir.position.set(3, 5, 4);
-scene.add(dir);
+    // Pre-baked patterns for which tiles are "active" and their target direction
+    // Each pattern: { colorMap: { index: colorClass }, target: rotationIndex }
+    const patterns = [
+      {
+        name: "01 · Initiate",
+        colorMap: {
+          6: "active-green",
+          7: "active-blue",
+          11: "active-blue",
+          12: "active-blue",
+          17: "active-pink"
+        },
+        target: 0
+      },
+      {
+        name: "02 · Cascade",
+        colorMap: {
+          1: "active-blue",
+          2: "active-blue",
+          7: "active-green",
+          8: "active-green",
+          13: "active-pink",
+          18: "active-pink"
+        },
+        target: 1
+      },
+      {
+        name: "03 · Crosslink",
+        colorMap: {
+          0: "active-blue",
+          4: "active-blue",
+          10: "active-green",
+          12: "active-green",
+          20: "active-pink",
+          24: "active-pink"
+        },
+        target: 2
+      }
+    ];
 
-// Grid configuration
-const GRID_SIZE = 5;
-const TILE_SIZE = 1.4;
-const tiles = []; // 2D array: tiles[row][col]
+    // --- INITIALIZATION -----------------------------------------------------
 
-// Connection directions: 0=up,1=right,2=down,3=left
-const DIRS = [
-  { dx: 0, dy: 1 },
-  { dx: 1, dy: 0 },
-  { dx: 0, dy: -1 },
-  { dx: -1, dy: 0 },
-];
+    function createGrid() {
+      gridElement.innerHTML = "";
+      tiles = [];
 
-const TILE_TYPES = {
-  STRAIGHT: "straight", // up-down
-  CORNER: "corner", // up-right
-  START: "start",
-  GOAL: "goal",
-};
+      for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        const tile = document.createElement("button");
+        tile.type = "button";
+        tile.className = "tile";
 
-// Utility: create material
-function createTileMaterial(color, emissive) {
-  return new THREE.MeshStandardMaterial({
-    color,
-    emissive,
-    metalness: 0.4,
-    roughness: 0.35,
-  });
-}
+        const ring = document.createElement("div");
+        ring.className = "tile-ring";
 
-const baseMaterial = createTileMaterial(0x0d1028, 0x060813);
-const pathMaterial = createTileMaterial(0x1a284f, 0x111841);
-const startMaterial = createTileMaterial(0x00ff99, 0x00aa66);
-const goalMaterial = createTileMaterial(0x33ccff, 0x1177aa);
-const activeMaterial = createTileMaterial(0xffff88, 0xffcc33);
+        const notch = document.createElement("div");
+        notch.className = "tile-notch";
 
-// Tile class (pure data + reference to mesh)
-class Tile {
-  constructor(row, col, type, rotation = 0) {
-    this.row = row;
-    this.col = col;
-    this.type = type;
-    this.rotation = rotation; // 0,1,2,3 * 90deg
-    this.mesh = null;
-  }
+        ring.appendChild(notch);
+        tile.appendChild(ring);
+        gridElement.appendChild(tile);
 
-  getConnections() {
-    // returns array of direction indices this tile connects to.
-    switch (this.type) {
-      case TILE_TYPES.STRAIGHT:
-        // up & down by default; rotate rotates these dirs
-        return [0, 2].map((d) => (d + this.rotation) % 4);
-      case TILE_TYPES.CORNER:
-        // up & right by default
-        return [0, 1].map((d) => (d + this.rotation) % 4);
-      case TILE_TYPES.START:
-      case TILE_TYPES.GOAL:
-        // treat as a straight by default so you can connect nicely
-        return [0, 2].map((d) => (d + this.rotation) % 4);
-      default:
-        return [];
-    }
-  }
+        tiles.push({
+          index: i,
+          element: tile,
+          notch,
+          active: false,
+          rotation: 0 // discrete step of 90°
+        });
 
-  rotate() {
-    if (this.type === TILE_TYPES.START || this.type === TILE_TYPES.GOAL) return; // fixed
-    this.rotation = (this.rotation + 1) % 4;
-    if (this.mesh) {
-      this.mesh.rotation.z = (Math.PI / 2) * this.rotation;
-    }
-  }
-
-  setVisualState(state) {
-    if (!this.mesh) return;
-    switch (state) {
-      case "normal":
-        if (this.type === TILE_TYPES.START) this.mesh.material = startMaterial;
-        else if (this.type === TILE_TYPES.GOAL) this.mesh.material = goalMaterial;
-        else this.mesh.material = baseMaterial;
-        break;
-      case "path":
-        if (this.type === TILE_TYPES.START) this.mesh.material = startMaterial;
-        else if (this.type === TILE_TYPES.GOAL) this.mesh.material = goalMaterial;
-        else this.mesh.material = pathMaterial;
-        break;
-      case "active":
-        this.mesh.material = activeMaterial;
-        break;
-    }
-  }
-}
-
-// --- Level setup ---
-
-function createGrid() {
-  // Clear old tiles if any
-  tiles.length = 0;
-
-  // layout: simple start on left, goal on right
-  // You can make this data-driven later.
-  const mid = Math.floor(GRID_SIZE / 2);
-
-  for (let r = 0; r < GRID_SIZE; r++) {
-    tiles[r] = [];
-    for (let c = 0; c < GRID_SIZE; c++) {
-      let type = TILE_TYPES.STRAIGHT;
-      if (r === mid && c === 0) type = TILE_TYPES.START;
-      else if (r === mid && c === GRID_SIZE - 1) type = TILE_TYPES.GOAL;
-      else if (Math.random() < 0.5) type = TILE_TYPES.CORNER; // random mix
-
-      const tile = new Tile(r, c, type, Math.floor(Math.random() * 4));
-      tiles[r][c] = tile;
-
-      // Create mesh
-      const geom = new THREE.PlaneGeometry(TILE_SIZE * 0.9, TILE_SIZE * 0.9, 1, 1);
-      const mesh = new THREE.Mesh(geom, baseMaterial);
-      const x = (c - (GRID_SIZE - 1) / 2) * TILE_SIZE;
-      const y = (r - (GRID_SIZE - 1) / 2) * TILE_SIZE;
-      mesh.position.set(x, y, 0);
-      mesh.rotation.z = (Math.PI / 2) * tile.rotation;
-
-      // slight elevation for nicer lighting
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-
-      scene.add(mesh);
-      tile.mesh = mesh;
-
-      // For picking
-      mesh.userData.tile = tile;
-    }
-  }
-
-  // Apply visual state for start/goal
-  tiles[mid][0].setVisualState("normal");
-  tiles[mid][GRID_SIZE - 1].setVisualState("normal");
-
-  updatePathHighlight();
-}
-
-// --- Pathfinding / connection logic ---
-
-function inBounds(r, c) {
-  return r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE;
-}
-
-function findStartAndGoal() {
-  let start = null;
-  let goal = null;
-  for (let r = 0; r < GRID_SIZE; r++) {
-    for (let c = 0; c < GRID_SIZE; c++) {
-      const t = tiles[r][c];
-      if (t.type === TILE_TYPES.START) start = t;
-      if (t.type === TILE_TYPES.GOAL) goal = t;
-    }
-  }
-  return { start, goal };
-}
-
-// Flood fill along connected tiles
-function computePath() {
-  const { start, goal } = findStartAndGoal();
-  if (!start || !goal) return { connected: false, visited: [] };
-
-  const queue = [];
-  const visited = new Set();
-  const parent = new Map();
-
-  const key = (r, c) => `${r},${c}`;
-
-  queue.push(start);
-  visited.add(key(start.row, start.col));
-
-  while (queue.length > 0) {
-    const current = queue.shift();
-    if (current === goal) break;
-
-    const conns = current.getConnections();
-    for (const dirIndex of conns) {
-      const { dx, dy } = DIRS[dirIndex];
-      const nr = current.row + dy;
-      const nc = current.col + dx;
-      if (!inBounds(nr, nc)) continue;
-
-      const neighbor = tiles[nr][nc];
-      if (!neighbor) continue;
-
-      // Check that neighbor connects back
-      const opposite = (dirIndex + 2) % 4;
-      const neighborConns = neighbor.getConnections();
-      if (!neighborConns.includes(opposite)) continue;
-
-      const k = key(nr, nc);
-      if (!visited.has(k)) {
-        visited.add(k);
-        parent.set(neighbor, current);
-        queue.push(neighbor);
+        tile.addEventListener("click", () => {
+          rotateTile(i);
+        });
       }
     }
-  }
 
-  const connected = visited.has(key(goal.row, goal.col));
+    // Apply current pattern styling and random starting rotations
+    function applyPattern() {
+      const pattern = patterns[patternIndex];
+      patternIndexLabel.textContent = String(patternIndex + 1).padStart(2, "0");
+      levelLabel.textContent = pattern.name;
 
-  let pathTiles = [];
-  if (connected) {
-    // Reconstruct path from goal -> start
-    let cur = goal;
-    while (cur) {
-      pathTiles.push(cur);
-      cur = parent.get(cur) || (cur === start ? null : null);
-      if (cur === start) {
-        pathTiles.push(start);
-        break;
+      tiles.forEach((tile) => {
+        tile.active = false;
+        tile.rotation = 0;
+        tile.element.classList.remove("active-blue", "active-green", "active-pink", "solved");
+        tile.notch.style.transform = "rotate(0deg)";
+      });
+
+      Object.entries(pattern.colorMap).forEach(([idx, colorClass]) => {
+        const tile = tiles[Number(idx)];
+        if (!tile) return;
+
+        tile.active = true;
+        tile.element.classList.add(colorClass);
+
+        // Start them in a random rotation so it's not already solved
+        const randomRot = Math.floor(Math.random() * (MAX_ROTATION + 1));
+        tile.rotation = randomRot;
+        const deg = randomRot * 90;
+        tile.notch.style.transform = `rotate(${deg}deg)`;
+      });
+
+      moves = 0;
+      movesLabel.textContent = "0";
+      timeRemaining = BASE_TIME;
+      updateTimerLabel();
+      restartTimer();
+    }
+
+    // --- GAME LOGIC ---------------------------------------------------------
+
+    function rotateTile(index) {
+      const tile = tiles[index];
+      if (!tile) return;
+
+      // Only active tiles affect win condition, but allow rotating others for feel
+      tile.rotation = (tile.rotation + 1) % (MAX_ROTATION + 1);
+      const deg = tile.rotation * 90;
+      tile.notch.style.transform = `rotate(${deg}deg)`;
+
+      if (tile.active) {
+        moves++;
+        movesLabel.textContent = moves;
+        checkSolved();
       }
     }
-  }
 
-  return { connected, visited: Array.from(visited), pathTiles };
-}
+    function checkSolved() {
+      const target = patterns[patternIndex].target;
 
-function updatePathHighlight() {
-  // reset visuals
-  for (let r = 0; r < GRID_SIZE; r++) {
-    for (let c = 0; c < GRID_SIZE; c++) {
-      tiles[r][c].setVisualState("normal");
+      const allAligned = tiles
+        .filter((t) => t.active)
+        .every((t) => t.rotation === target);
+
+      if (allAligned) {
+        tiles
+          .filter((t) => t.active)
+          .forEach((t) => t.element.classList.add("solved"));
+
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+
+        // small visual feedback by briefly increasing timeRemaining (no negative)
+        timeRemaining = Math.max(timeRemaining, 0);
+        updateTimerLabel();
+      }
     }
-  }
 
-  const { connected, pathTiles } = computePath();
-  if (connected) {
-    pathTiles.forEach((tile) => tile.setVisualState("path"));
-    statusEl.textContent = "✅ Access Granted!";
-  } else {
-    statusEl.textContent = "";
-  }
-}
+    // --- TIMER --------------------------------------------------------------
 
-// --- Interaction (raycasting) ---
-
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-
-function onPointerDown(event) {
-  const rect = renderer.domElement.getBoundingClientRect();
-  const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  mouse.set(x, y);
-
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(scene.children, false);
-
-  if (intersects.length > 0) {
-    const mesh = intersects[0].object;
-    const tile = mesh.userData.tile;
-    if (tile) {
-      tile.rotate();
-      updatePathHighlight();
+    function updateTimerLabel() {
+      timerDisplay.textContent = timeRemaining.toFixed(1) + "s";
     }
-  }
-}
 
-// --- Resize handling ---
+    function restartTimer() {
+      if (timer) {
+        clearInterval(timer);
+      }
 
-function onResize() {
-  const width = container.clientWidth;
-  const height = container.clientHeight;
+      const start = performance.now();
+      let lastTimestamp = start;
 
-  renderer.setSize(width, height);
+      timer = setInterval(() => {
+        const now = performance.now();
+        const delta = (now - lastTimestamp) / 1000;
+        lastTimestamp = now;
 
-  const aspect = width / height;
-  camera.left = (frustumSize * aspect) / -2;
-  camera.right = (frustumSize * aspect) / 2;
-  camera.top = frustumSize / 2;
-  camera.bottom = frustumSize / -2;
-  camera.updateProjectionMatrix();
-}
-
-window.addEventListener("resize", onResize);
-renderer.domElement.addEventListener("pointerdown", onPointerDown);
-
-resetButton.addEventListener("click", () => {
-  // remove all meshes from scene except lights
-  const toRemove = [];
-  scene.traverse((obj) => {
-    if (obj.isMesh && obj.userData.tile) {
-      toRemove.push(obj);
+        timeRemaining -= delta;
+        if (timeRemaining <= 0) {
+          timeRemaining = 0;
+          updateTimerLabel();
+          clearInterval(timer);
+          timer = null;
+          // Optional: flash grid on timeout
+          flashTimeout();
+          return;
+        }
+        updateTimerLabel();
+      }, 100);
     }
-  });
-  toRemove.forEach((m) => scene.remove(m));
 
-  createGrid();
-});
-
-// --- Animation loop ---
-
-function animate() {
-  requestAnimationFrame(animate);
-
-  // subtle pulsing effect
-  const t = performance.now() * 0.001;
-  scene.traverse((obj) => {
-    if (obj.isMesh && obj.userData.tile) {
-      obj.position.z = Math.sin(t * 2 + obj.position.x * 0.5 + obj.position.y * 0.5) * 0.03;
+    function flashTimeout() {
+      gridElement.style.filter = "brightness(0.4)";
+      setTimeout(() => {
+        gridElement.style.filter = "none";
+      }, 350);
     }
-  });
 
-  renderer.render(scene, camera);
-}
+    // --- CONTROLS -----------------------------------------------------------
 
-// Init
-onResize();
-createGrid();
-animate();
+    prevBtn.addEventListener("click", () => {
+      patternIndex = (patternIndex - 1 + patterns.length) % patterns.length;
+      applyPattern();
+    });
+
+    nextBtn.addEventListener("click", () => {
+      patternIndex = (patternIndex + 1) % patterns.length;
+      applyPattern();
+    });
+
+    shuffleBtn.addEventListener("click", () => {
+      // Randomize only rotations of active tiles
+      tiles
+        .filter((t) => t.active)
+        .forEach((t) => {
+          t.element.classList.remove("solved");
+          const randomRot = Math.floor(Math.random() * (MAX_ROTATION + 1));
+          t.rotation = randomRot;
+          t.notch.style.transform = `rotate(${randomRot * 90}deg)`;
+        });
+
+      moves = 0;
+      movesLabel.textContent = "0";
+      timeRemaining = BASE_TIME;
+      updateTimerLabel();
+      restartTimer();
+    });
+
+    restartBtn.addEventListener("click", () => {
+      applyPattern();
+    });
+
+    // --- BOOTSTRAP ----------------------------------------------------------
+
+    createGrid();
+    applyPattern();

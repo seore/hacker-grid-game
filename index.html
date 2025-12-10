@@ -2,20 +2,125 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Hack the Grid</title>
+  <title>Hack-the-Grid</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Cyber-ish font -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Main styles -->
   <link rel="stylesheet" href="src/css/style.css" />
 </head>
 <body>
-  <div id="ui">
-    <h1>Hack the Grid</h1>
-    <p>Click tiles to rotate. Connect <span class="start">START</span> to <span class="goal">GOAL</span>.</p>
-    <button id="resetButton">Reset</button>
-    <div id="status"></div>
+  <div class="app-shell">
+    <div class="app-inner">
+      <!-- HEADER / HUD -->
+      <header class="hud-header">
+        <div class="brand-block">
+          <div class="brand-icon"></div>
+          <div class="brand-text">
+            <h1>Hack-the-Grid</h1>
+            <span>Minimal cyber-puzzle</span>
+          </div>
+        </div>
+
+        <div class="hud-stats">
+          <div class="pill" id="difficultyPill">
+            <small>Difficulty</small>
+            <span id="difficultyLabel">Easy</span>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Level</div>
+            <div class="stat-value" id="levelLabel">01 · Initiate</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Moves</div>
+            <div class="stat-value" id="movesLabel">0</div>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <!-- GRID SIDE -->
+        <section class="grid-card" aria-label="Puzzle grid">
+          <div class="grid-card-header">
+            <h2>Node Alignment</h2>
+            <div class="pattern-badges">
+              <div class="pattern-badge">
+                <span class="pattern-badge-dot"></span>
+                PATTERN <span id="patternIndex">01</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-wrapper">
+            <div class="grid" id="grid"></div>
+          </div>
+
+          <div class="grid-controls">
+            <div class="btn-row">
+              <button class="btn btn-secondary" id="prevBtn">
+                ◀ <span>Prev</span>
+              </button>
+              <button class="btn" id="shuffleBtn">
+                ✦ <span>Shuffle</span>
+              </button>
+              <button class="btn btn-secondary" id="nextBtn">
+                <span>Next</span> ▶
+              </button>
+            </div>
+            <div class="hint-text">
+              Click glowing tiles to rotate. Align all active nodes to the same direction.
+            </div>
+          </div>
+        </section>
+
+        <!-- SIDEBAR / COPY -->
+        <aside class="side-panel">
+          <div class="side-panel-inner">
+            <div class="tagline-heading">Neon-clean. Brain-sharp.</div>
+            <h2>Connect nodes. Rotate tiles. Beat the clock.</h2>
+            <p>
+              Hack-the-Grid is a beautiful, simple, addictive cyber-puzzle.
+              Rotate glowing nodes to snap the circuitry into place before the
+              system locks you out.
+            </p>
+
+            <ul class="feature-list">
+              <li>
+                <span class="feature-dot"></span>
+                Connect nodes across the grid with clean geometric paths.
+              </li>
+              <li>
+                <span class="feature-dot"></span>
+                Rotate tiles to find the perfect orientation and flow.
+              </li>
+              <li>
+                <span class="feature-dot"></span>
+                Timed challenges keep every hack tight and tense.
+              </li>
+            </ul>
+
+            <div class="timer-chip">
+              <div>
+                <div class="timer-chip-label">Time Left</div>
+                <div class="timer-display" id="timerDisplay">60.0s</div>
+              </div>
+              <button class="btn btn-danger" id="restartBtn" style="font-size:0.7rem;padding:0.25rem 0.7rem;">
+                Reset
+              </button>
+            </div>
+
+            <div class="footer-note">
+              Made with <span>HTML</span>, <span>CSS</span> &amp; <span>JavaScript</span>.
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
   </div>
 
-  <div id="game-container"></div>
-
-  <!-- Three.js as ES module -->
-  <script type="module" src="src/js/game.js"></script>
+  <!-- Game logic -->
+  <script src="src/js/game.js"></script>
 </body>
 </html>
