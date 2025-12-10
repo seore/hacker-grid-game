@@ -1,3 +1,4 @@
+// DOM references
 const gridElement = document.getElementById("grid");
 const movesLabel = document.getElementById("movesLabel");
 const levelLabel = document.getElementById("levelLabel");
@@ -15,8 +16,15 @@ const gameScreen = document.getElementById("gameScreen");
 const startBtn = document.getElementById("startBtn");
 const gridWrapper = document.querySelector(".grid-wrapper");
 
+const howToBtn = document.getElementById("howToBtn");
+const settingsBtn = document.getElementById("settingsBtn");
+const howToModal = document.getElementById("howToModal");
+const settingsModal = document.getElementById("settingsModal");
+const closeHowToBtn = document.getElementById("closeHowToBtn");
+const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+
 const GRID_SIZE = 5;
-const ROTATIONS = [0, 90, 180, 270];
+const ROTATIONS = [0, 90, 180, 270]; 
 const BASE_TIME = 60;
 
 let tiles = [];
@@ -26,10 +34,11 @@ let timer = null;
 let timeRemaining = BASE_TIME;
 let hasStarted = false;
 
-/*  PATTERNS
-   - endpoints: green & pink, NON-movable
-   - path: full path indices, can include endpoints
-   - targets: per-tile correct rotation in degrees
+/*
+  LEVELS (no decoys)
+
+  endpoints: { index: "active-green" | "active-pink" }
+  path: continuous line (indices) from green → pink
 */
 
 const patterns = [
@@ -37,94 +46,124 @@ const patterns = [
     name: "01 · Initiate",
     difficulty: "easy",
     time: 70,
-
-    endpoints: {
-      6: "active-green",
-      18: "active-pink"
-    },
-
-    path: [6, 7, 12, 17, 18],
-
-    targets:{
-      6: 0,
-      7: 90,
-      12: 0,
-      17: 90,
-      18: 180
-    }
+    endpoints: { 6: "active-green", 18: "active-pink" },
+    path: [6, 7, 12, 17, 18]
   },
   {
     name: "02 · Splitstream",
     difficulty: "easy",
     time: 60,
-
-    endpoints:{ 3:"active-green", 21:"active-pink" },
-
-    path:[3,4,9,14,19,20,21],
-
-    targets:{
-      3:90, 4:90, 9:0, 14:0, 19:90, 20:270, 21:180
-    }
+    endpoints: { 3: "active-green", 21: "active-pink" },
+    path: [3, 4, 9, 14, 19, 24, 23, 22, 21]
   },
   {
-    name:"03 · Snakeshift",
-    difficulty:"medium",
-    time:55,
-
-    endpoints:{ 1:"active-green", 23:"active-pink" },
-
-    path:[1,2,7,12,13,18,23],
-
-    targets:{
-      1:0, 2:90, 7:0, 12:90, 13:180, 18:90, 23:180
-    }
+    name: "03 · Snakeshift",
+    difficulty: "medium",
+    time: 55,
+    endpoints: { 1: "active-green", 23: "active-pink" },
+    path: [1, 2, 7, 12, 13, 18, 23]
   },
   {
-    // Column 1: [1, 6, 11, 16, 21]
     name: "04 · Circuit Gate",
     difficulty: "medium",
     time: 50,
-
-    endpoints: {
-      1: "active-green",
-      21: "active-pink"
-    },
-    path:[1, 6, 11, 16, 21],
-    targets:{
-      1: 0, 6: 0, 11: 0, 16: 0, 21: 180
-    }
+    endpoints: { 1: "active-green", 21: "active-pink" },
+    path: [1, 6, 11, 16, 21]
   },
   {
-    // Row 0: [0, 1, 2, 3, 4]
     name: "05 · Crosslink",
     difficulty: "hard",
     time: 45,
-
-    endpoints: {
-      0: "active-green",
-      4: "active-pink"
-    },
-    path:[0,1,2,3,4],
-    targets:{
-      0:90, 1:90, 2:90, 3:90, 4:90
-    }
+    endpoints: { 0: "active-green", 14: "active-pink" },
+    path: [0, 1, 2, 7, 12, 13, 14]
   },
   {
-    // Column 3: [3, 8, 13, 18, 23]
     name: "06 · Overload",
     difficulty: "hard",
     time: 40,
-
-    endpoints: {
-      3: "active-green",
-      23: "active-pink"
-    },
-    path:[3,8,13,18,23],
-    targets:{
-      3:0, 8:0, 13:0, 18:0, 23:180
-    }
+    endpoints: { 2: "active-green", 24: "active-pink" },
+    path: [2, 7, 12, 17, 22, 23, 24]
+  },
+  {
+    name: "07 · Driftline",
+    difficulty: "medium",
+    time: 55,
+    endpoints: { 5: "active-green", 19: "active-pink" },
+    path: [5, 10, 15, 16, 17, 18, 19]
+  },
+  {
+    name: "08 · Crossweave",
+    difficulty: "hard",
+    time: 45,
+    endpoints: { 9: "active-green", 20: "active-pink" },
+    path: [9, 8, 7, 12, 17, 22, 21, 20]
+  },
+  {
+    name: "09 · Spiral Gate",
+    difficulty: "expert",
+    time: 50,
+    endpoints: { 0: "active-green", 18: "active-pink" },
+    path: [
+      0, 1, 2, 3, 4,
+      9, 14, 19, 24,
+      23, 22, 21, 20,
+      15, 10, 5, 6, 7, 8, 13, 18
+    ]
+  },
+  {
+    name: "10 · Overpass",
+    difficulty: "easy",
+    time: 65,
+    endpoints: { 11: "active-green", 9: "active-pink" },
+    path: [11, 6, 7, 8, 9]
   }
 ];
+
+
+/* ---------- Helpers ---------- */
+
+function idxToRC(i) {
+  return [Math.floor(i / GRID_SIZE), i % GRID_SIZE];
+}
+
+function computeTargets(pattern) {
+  const path = pattern.path;
+  const targets = {};
+
+  for (let k = 0; k < path.length; k++) {
+    const i = path[k];
+    const prev = k > 0 ? path[k - 1] : null;
+    const next = k < path.length - 1 ? path[k + 1] : null;
+
+    const [row, col] = idxToRC(i);
+    const [prevRow, prevCol] = prev != null ? idxToRC(prev) : [null, null];
+    const [nextRow, nextCol] = next != null ? idxToRC(next) : [null, null];
+
+    let horizontal;
+
+    if (prev == null && next != null) {
+      horizontal = nextRow === row;
+    } else if (next == null && prev != null) {
+      horizontal = prevRow === row;
+    } else if (prev != null && next != null) {
+      if (prevRow === row && nextRow === row) {
+        horizontal = true;
+      } else if (prevCol === col && nextCol === col) {
+        horizontal = false;
+      } else {
+        horizontal = prevRow === row;
+      }
+    } else {
+      horizontal = true;
+    }
+
+    targets[i] = horizontal ? 0 : 90;
+  }
+
+  pattern.targets = targets;
+}
+
+/* ---------- Grid creation ---------- */
 
 function createGrid() {
   gridElement.innerHTML = "";
@@ -151,71 +190,80 @@ function createGrid() {
       notch,
       movable: false,
       rotation: 0,
-      correctRotation: 0
+      correctRotation: 0,
+      isPath: false
     });
 
-    tile.addEventListener("click", () => {
-      rotateTile(i);
-    });
+    tile.addEventListener("click", () => rotateTile(i));
   }
 }
 
+/* ---------- Theme / HUD ---------- */
+
 function applyTheme(pattern) {
   document.body.classList.remove("theme-easy", "theme-medium", "theme-hard");
-  const themeClass = `theme-${pattern.difficulty}`;
-  document.body.classList.add(themeClass);
+  document.body.classList.add(`theme-${pattern.difficulty}`);
 
   difficultyLabel.textContent =
     pattern.difficulty.charAt(0).toUpperCase() + pattern.difficulty.slice(1);
 }
 
+/* ---------- Apply pattern ---------- */
+
 function applyPattern(startTimer = true) {
   const pattern = patterns[patternIndex];
+  computeTargets(pattern);
+
   patternIndexLabel.textContent = String(patternIndex + 1).padStart(2, "0");
   levelLabel.textContent = pattern.name;
   applyTheme(pattern);
 
-  // reset all tiles
+  const endpointSet = new Set(Object.keys(pattern.endpoints).map(Number));
+
   tiles.forEach((tile) => {
     tile.movable = false;
     tile.rotation = 0;
     tile.correctRotation = 0;
+    tile.isPath = false;
     tile.element.className = "tile inactive";
-    tile.notch.style.transform = "rotate(0deg)";
+    tile.notch.style.transform = "rotate(90deg)";
   });
 
-  // endpoints: static, non-movable, but we still give them a target rotation
+  // node endpoints
   Object.entries(pattern.endpoints).forEach(([idxStr, colorClass]) => {
     const idx = Number(idxStr);
     const tile = tiles[idx];
     if (!tile) return;
 
-    tile.movable = false; // IMPORTANT: never movable
+    tile.movable = false;
+    tile.isPath = true;
     tile.element.classList.remove("inactive");
     tile.element.classList.add(colorClass);
 
-    tile.correctRotation = pattern.targets[idx] ?? 0;
-    tile.rotation = tile.correctRotation;
+    const targetRot = pattern.targets[idx];
+    tile.correctRotation = targetRot;
+    tile.rotation = targetRot;
     tile.notch.style.transform = `rotate(${tile.rotation + 90}deg)`;
   });
 
-  // path tiles: cyan, movable – but SKIP endpoints so they stay green/pink
+  // main path cyan (movable except endpoints)
   pattern.path.forEach((idx) => {
-    if (pattern.endpoints[idx] !== undefined) return; // don't override endpoints
+    if (endpointSet.has(idx)) return;
 
     const tile = tiles[idx];
     if (!tile) return;
 
     tile.movable = true;
+    tile.isPath = true;
     tile.element.classList.remove("inactive");
     tile.element.classList.add("active-blue", "movable");
 
-    tile.correctRotation = pattern.targets[idx] ?? 0;
-    tile.rotation = tile.correctRotation;
+    const targetRot = pattern.targets[idx];
+    tile.correctRotation = targetRot;
+    tile.rotation = targetRot;
     tile.notch.style.transform = `rotate(${tile.rotation + 90}deg)`;
   });
 
-  // scramble only movable (cyan) tiles
   scrambleMovable(pattern);
 
   moves = 0;
@@ -231,67 +279,103 @@ function applyPattern(startTimer = true) {
   }
 }
 
-// scramble movable tiles by giving each a random rotation (endpoints stay correct)
+/* ---------- Scramble ---------- */
+
 function scrambleMovable(pattern) {
-  pattern.path.forEach((idx) => {
-    if (pattern.endpoints[idx] !== undefined) return; // skip green/pink
+  tiles
+    .filter((t) => t.movable)
+    .forEach((tile) => {
+      const rand = Math.floor(Math.random() * ROTATIONS.length);
+      tile.rotation = ROTATIONS[rand];
+      tile.notch.style.transform = `rotate(${tile.rotation + 90}deg)`;
+      tile.element.classList.remove("solved", "path-glow", "dead-end");
+    });
 
-    const tile = tiles[idx];
-    if (!tile) return;
-
-    const randomIndex = Math.floor(Math.random() * ROTATIONS.length);
-    tile.rotation = ROTATIONS[randomIndex];
-    tile.notch.style.transform = `rotate(${tile.rotation}deg)`;
-  });
-
-  // also clear solved state
-  tiles.forEach((t) => t.element.classList.remove("solved"));
+  updateHintState(pattern);
 }
+
+/* ---------- Rotate tile ---------- */
 
 function rotateTile(index) {
   const tile = tiles[index];
   if (!tile || !tile.movable || !hasStarted) return;
 
-  // cycle through [0,90,180,270]
   let next = ROTATIONS.indexOf(tile.rotation) + 1;
   if (next >= ROTATIONS.length) next = 0;
   tile.rotation = ROTATIONS[next];
 
-  const deg = tile.rotation;
-  tile.notch.style.transform = `rotate(${deg}deg)`;
+  tile.notch.style.transform = `rotate(${tile.rotation + 90}deg)`;
 
   moves++;
   movesLabel.textContent = moves;
+
+  const pattern = patterns[patternIndex];
+  updateHintState(pattern);
   checkSolved();
 }
 
+/* ---------- Hint: misaligned path tiles ---------- */
+
+function updateHintState(pattern) {
+  const targetMap = pattern.targets || {};
+  pattern.path.forEach((idx) => {
+    const tile = tiles[idx];
+    if (!tile || !tile.isPath || !tile.movable) return;
+
+    if (tile.rotation !== targetMap[idx]) {
+      tile.element.classList.add("dead-end");
+    } else {
+      tile.element.classList.remove("dead-end");
+    }
+  });
+}
+
+/* ---------- Solve animation ---------- */
+
+function animatePathFlow(pattern) {
+  const STEP = 90;
+  pattern.path.forEach((idx, i) => {
+    const tile = tiles[idx];
+    if (!tile) return;
+
+    setTimeout(() => {
+      tile.element.classList.add("path-glow");
+      if (tile.movable && tile.isPath) {
+        tile.element.classList.add("solved");
+      }
+    }, i * STEP);
+
+    setTimeout(() => {
+      tile.element.classList.remove("path-glow");
+    }, i * STEP + 450);
+  });
+}
+
+/* ---------- Check solved ---------- */
+
 function checkSolved() {
   const pattern = patterns[patternIndex];
+  const targets = pattern.targets || {};
 
-  // solved when every tile on the path (including endpoints)
-  // matches its target rotation.
   const allAligned = pattern.path.every((idx) => {
     const tile = tiles[idx];
-    const correct = pattern.targets[idx] ?? 0;
+    const correct = targets[idx];
     return tile && tile.rotation === correct;
   });
 
-  if (allAligned) {
-    // highlight only movable path tiles (cyan)
-    pattern.path.forEach((idx) => {
-      if (pattern.endpoints[idx] !== undefined) return;
-      const tile = tiles[idx];
-      if (tile) tile.element.classList.add("solved");
-    });
+  if (!allAligned) return;
 
-    if (timer) {
-      clearInterval(timer);
-      timer = null;
-    }
-    timeRemaining = Math.max(timeRemaining, 0);
-    updateTimerLabel();
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
   }
+  timeRemaining = Math.max(timeRemaining, 0);
+  updateTimerLabel();
+
+  animatePathFlow(pattern);
 }
+
+/* ---------- Timer ---------- */
 
 function updateTimerLabel() {
   timerDisplay.textContent = timeRemaining.toFixed(1) + "s";
@@ -330,7 +414,8 @@ function flashTimeout() {
   }, 350);
 }
 
-// Smooth transition between patterns
+/* ---------- Level navigation ---------- */
+
 function transitionToPattern(nextIndex) {
   gridWrapper.classList.add("fade-out");
 
@@ -341,7 +426,6 @@ function transitionToPattern(nextIndex) {
   }, 220);
 }
 
-// controls
 prevBtn.addEventListener("click", () => {
   const nextIndex = (patternIndex - 1 + patterns.length) % patterns.length;
   transitionToPattern(nextIndex);
@@ -367,11 +451,41 @@ restartBtn.addEventListener("click", () => {
   applyPattern(true);
 });
 
-// Start screen → game screen
+/* ---------- Home screen & modals ---------- */
+
+function openModal(modal) {
+  if (!modal) return;
+  modal.classList.add("home-modal-open");
+}
+function closeModal(modal) {
+  if (!modal) return;
+  modal.classList.remove("home-modal-open");
+}
+
+if (howToBtn && howToModal) {
+  howToBtn.addEventListener("click", () => openModal(howToModal));
+}
+if (settingsBtn && settingsModal) {
+  settingsBtn.addEventListener("click", () => openModal(settingsModal));
+}
+if (closeHowToBtn && howToModal) {
+  closeHowToBtn.addEventListener("click", () => closeModal(howToModal));
+}
+if (closeSettingsBtn && settingsModal) {
+  closeSettingsBtn.addEventListener("click", () => closeModal(settingsModal));
+}
+[howToModal, settingsModal].forEach((modal) => {
+  if (!modal) return;
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal(modal);
+  });
+});
+
+/* ---------- Start screen ---------- */
+
 startBtn.addEventListener("click", () => {
   hasStarted = true;
 
-  // fade out home, fade in game
   homeScreen.classList.remove("screen-active");
   homeScreen.classList.add("screen-hidden");
 
@@ -381,7 +495,7 @@ startBtn.addEventListener("click", () => {
   restartTimer();
 });
 
-// boot
+/* ---------- Boot ---------- */
+
 createGrid();
-// load first pattern but don't run timer until the player starts
 applyPattern(false);

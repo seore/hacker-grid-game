@@ -13,19 +13,101 @@
 </head>
 <body>
   <!-- HOME / TITLE SCREEN -->
-  <div id="homeScreen" class="screen screen-active">
-    <div class="home-card">
-      <div class="home-title">HACK THE GRID</div>
-      <div class="home-tagline">
-        Minimal cyber-puzzle. Neon clean.<br />
-        Brain sharp.
+<div id="homeScreen" class="screen screen-active">
+  <div class="home-shell">
+    <div class="home-left">
+      <div class="home-logo-orb"></div>
+      <div class="home-heading-block">
+        <div class="home-kicker">Neon-clean. Brain-sharp.</div>
+        <h1 class="home-game-title">HACK THE GRID</h1>
+        <p class="home-sub">
+          Minimal cyber-puzzle. Rotate circuits, connect nodes, beat the clock.
+        </p>
+      </div>
+    </div>
+
+    <div class="home-right">
+      <div class="home-menu-card">
+        <div class="home-menu-label">Main Console</div>
+        <button id="startBtn" class="btn home-menu-btn primary">
+          ✦ Start Hack
+        </button>
+        <button id="howToBtn" class="btn home-menu-btn">
+          ⌘ How to Play
+        </button>
+        <button id="settingsBtn" class="btn home-menu-btn">
+          ⚙ Settings
+        </button>
       </div>
 
-      <button id="startBtn" class="btn home-start-btn">
-        ✦ START HACK
-      </button>
+      <div class="home-build-meta">
+        v0.1 · Prototype · Made with HTML, CSS &amp; JavaScript
+      </div>
     </div>
   </div>
+
+  <!-- HOW TO PLAY MODAL -->
+  <div id="howToModal" class="home-modal">
+    <div class="home-modal-card">
+      <div class="home-modal-header">
+        <h2>How to Play</h2>
+        <button id="closeHowToBtn" class="home-close-btn">✕</button>
+      </div>
+      <ul class="home-modal-list">
+        <li>Green = source node. Pink = target node. They never move.</li>
+        <li>Cyan tiles are the only ones you can rotate.</li>
+        <li>Click a cyan tile to rotate it 90°. Align bars to form one clean path from green to pink.</li>
+        <li>Beat the timer. Fewer moves = cleaner hack.</li>
+      </ul>
+      <p class="home-modal-footer">
+        Tip: watch the neon flow when you solve a pattern – that’s the data stream you just hijacked.
+      </p>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settingsModal" class="home-modal">
+    <div class="home-modal-card">
+      <div class="home-modal-header">
+        <h2>Settings</h2>
+        <button id="closeSettingsBtn" class="home-close-btn">✕</button>
+      </div>
+
+      <div class="home-setting-row">
+        <span>Difficulty Theme</span>
+        <div class="home-setting-pills">
+          <span class="pill pill-mini pill-on">Easy</span>
+          <span class="pill pill-mini">Medium</span>
+          <span class="pill pill-mini">Hard</span>
+        </div>
+      </div>
+
+      <div class="home-setting-row">
+        <span>Music</span>
+        <div class="home-slider-shell">
+          <div class="home-slider-track">
+            <div class="home-slider-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-setting-row">
+        <span>FX</span>
+        <div class="home-slider-shell">
+          <div class="home-slider-track">
+            <div class="home-slider-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="home-modal-footer">
+        Settings are cosmetic for now – wire them into your audio / difficulty
+        logic when you’re ready.
+      </p>
+    </div>
+  </div>
+</div>
+
 
   <!-- MAIN GAME SCREEN -->
   <div id="gameScreen" class="screen screen-hidden">
