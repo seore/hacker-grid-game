@@ -10,8 +10,12 @@ const nextBtn = document.getElementById("nextBtn");
 const shuffleBtn = document.getElementById("shuffleBtn");
 const restartBtn = document.getElementById("restartBtn");
 
+const startOverlay = document.getElementById("startOverlay");
+const startBtn = document.getElementById("startBtn");
+const gridWrapper = document.querySelector(".grid-wrapper");
+
 const GRID_SIZE = 5;
-const MAX_ROTATION = 3; // 0,1,2,3 => 0°,90°,180°,270°
+const MAX_ROTATION = 3; 
 const BASE_TIME = 60;
 
 let tiles = [];
@@ -19,6 +23,7 @@ let patternIndex = 0;
 let moves = 0;
 let timer = null;
 let timeRemaining = BASE_TIME;
+let hasStarted = false;
 
 // patterns with difficulty + time + target direction
 const patterns = [
@@ -152,7 +157,7 @@ function applyTheme(pattern) {
     pattern.difficulty.charAt(0).toUpperCase() + pattern.difficulty.slice(1);
 }
 
-function applyPattern() {
+function applyPattern(startTimer = true) {
   const pattern = patterns[patternIndex];
   patternIndexLabel.textContent = String(patternIndex + 1).padStart(2, "0");
   levelLabel.textContent = pattern.name;
@@ -161,8 +166,7 @@ function applyPattern() {
   tiles.forEach((tile) => {
     tile.active = false;
     tile.rotation = 0;
-    tile.element.classList.remove("active-blue", "active-green", "active-pink", "solved");
-    tile.element.classList.add("inactive");
+    tile.element.className = "tile inactive";
     tile.notch.style.transform = "rotate(0deg)";
   });
 
@@ -183,12 +187,18 @@ function applyPattern() {
   movesLabel.textContent = "0";
   timeRemaining = pattern.time || BASE_TIME;
   updateTimerLabel();
-  restartTimer();
+
+  if (startTimer && hasStarted) {
+    restartTimer();
+  } else if (!startTimer && timer) {
+    clearInterval(timer);
+    timer = null;
+  }
 }
 
 function rotateTile(index) {
   const tile = tiles[index];
-  if (!tile || !tile.active) return;
+  if (!tile || !tile.active || !hasStarted) return;
 
   tile.rotation = (tile.rotation + 1) % (MAX_ROTATION + 1);
   const deg = tile.rotation * 90;
@@ -258,15 +268,26 @@ function flashTimeout() {
   }, 350);
 }
 
-// controls
+// Smooth transition between patterns
+function transitionToPattern(nextIndex) {
+  gridWrapper.classList.add("fade-out");
+
+  setTimeout(() => {
+    patternIndex = nextIndex;
+    applyPattern(true);
+    gridWrapper.classList.remove("fade-out");
+  }, 220);
+}
+
+// UI controls
 prevBtn.addEventListener("click", () => {
-  patternIndex = (patternIndex - 1 + patterns.length) % patterns.length;
-  applyPattern();
+  const nextIndex = (patternIndex - 1 + patterns.length) % patterns.length;
+  transitionToPattern(nextIndex);
 });
 
 nextBtn.addEventListener("click", () => {
-  patternIndex = (patternIndex + 1) % patterns.length;
-  applyPattern();
+  const nextIndex = (patternIndex + 1) % patterns.length;
+  transitionToPattern(nextIndex);
 });
 
 shuffleBtn.addEventListener("click", () => {
@@ -285,13 +306,21 @@ shuffleBtn.addEventListener("click", () => {
   movesLabel.textContent = "0";
   timeRemaining = pattern.time || BASE_TIME;
   updateTimerLabel();
-  restartTimer();
+  if (hasStarted) restartTimer();
 });
 
 restartBtn.addEventListener("click", () => {
-  applyPattern();
+  applyPattern(true);
+});
+
+// Start menu
+startBtn.addEventListener("click", () => {
+  startOverlay.classList.add("overlay-hidden");
+  hasStarted = true;
+  restartTimer();
 });
 
 // boot
 createGrid();
-applyPattern();
+// load first pattern but don't start timer until player presses Start
+applyPattern(false);

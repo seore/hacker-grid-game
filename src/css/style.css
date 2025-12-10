@@ -56,6 +56,91 @@ body {
   z-index: 1;
 }
 
+/* START OVERLAY */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 20% 0, rgba(5, 7, 30, 0.96), rgba(1, 2, 10, 0.98));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(18px);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.overlay.overlay-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-10px);
+}
+
+.overlay-panel {
+  max-width: 420px;
+  width: 90%;
+  border-radius: 26px;
+  padding: 1.4rem 1.5rem 1.6rem;
+  background: radial-gradient(circle at 0 0, #151834 0, #050716 60%);
+  border: 1px solid rgba(0, 245, 255, 0.4);
+  box-shadow:
+    0 0 40px rgba(0, 245, 255, 0.5),
+    0 0 80px rgba(255, 63, 142, 0.3);
+  text-align: left;
+}
+
+.overlay-title {
+  font-size: 1.4rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.overlay-tagline {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  margin-bottom: 0.8rem;
+}
+
+.overlay-features {
+  list-style: none;
+  margin-bottom: 1rem;
+  font-size: 0.83rem;
+  color: #d6deff;
+}
+
+.overlay-features li {
+  margin-bottom: 0.3rem;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.overlay-features li::before {
+  content: "✦";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 0.8rem;
+  color: #00f5ff;
+}
+
+.overlay-start-btn {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.82rem;
+  padding: 0.5rem 1rem;
+}
+
+.overlay-sub {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(153, 162, 210, 0.9);
+}
+
 /* HEADER */
 
 .hud-header {
