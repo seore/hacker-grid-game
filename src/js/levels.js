@@ -5,14 +5,12 @@
  *  T = target (fixed vertical)
  *  | = vertical straight
  *  - = horizontal straight
- *  L = corner up-right
- *  R = corner right-down
- *  J = corner down-left
- *  7 = corner left-up
+ *  L/R/J/7 = any corner (rotatable)
+ *  X = 4-way cross junction
+ *  Y = 3-way T-junction (rotatable)
  */
 
 const LEVELS = [
-  // Level 1
   {
     id: 1,
     name: "Tutorial Link",
@@ -26,100 +24,88 @@ const LEVELS = [
     ],
     parMoves: 4,
   },
-
-  // Level 2
   {
     id: 2,
-    name: "Offset Signal",
+    name: "Grid Boot",
     size: 5,
     layout: [
-      ".....",
-      ".S|..",  
-      ".LJ..",  
-      "..T..", 
-      ".....",
+      ".SYX.",
+      ".YXX.",
+      ".X.X.",
+      ".X.Y.",
+      ".YXT.",
     ],
-    parMoves: 8,
+    parMoves: 14,
   },
-
-  // Level 3
   {
     id: 3,
-    name: "Twisted Loop",
+    name: "Forked Lines",
     size: 5,
     layout: [
-      "..S..",  
-      "..|..",  
-      "..L-R",  
-      "....|",  
-      "....T",  
-    ],
-    parMoves: 12,
-  },
-
-  // Level 4
-  {
-    id: 4,
-    name: "Crossed Paths",
-    size: 6,
-    layout: [
-      ".S....",  
-      ".|....",  
-      ".L-J..",  
-      "...|..",  
-      "...|..",  
-      "...T..",  
-    ],
-    parMoves: 16,
-  },
-
-  // Level 5
-  {
-    id: 5,
-    name: "Signal Maze",
-    size: 6,
-    layout: [
-      "..S...",
-      "..|...",
-      "..L--R",
-      ".....|",
-      "...J-7",
-      "...T..",
+      ".SXY.",
+      ".X.Y.",
+      ".YXX.",
+      ".X.Y.",
+      ".TXY.",
     ],
     parMoves: 18,
   },
-
-  // Level 6
+  {
+    id: 4,
+    name: "Core Loop",
+    size: 6,
+    layout: [
+      ".SXY..",
+      ".XXX..",
+      ".XYXY.",
+      ".XXXX.",
+      "..YXT.",
+      "......",
+    ],
+    parMoves: 24,
+  },
+  {
+    id: 5,
+    name: "Signal Web",
+    size: 6,
+    layout: [
+      ".SXXXX",
+      ".YXYXY",
+      "XXYXXX",
+      "YXYXYX",
+      "XXXYYT",
+      "......",
+    ],
+    parMoves: 30,
+  },
   {
     id: 6,
-    name: "Long Circuit",
+    name: "Overload",
     size: 7,
     layout: [
-      "...S...",
-      "...|...",
-      "...L--R",
-      "......|",
-      "......|",
-      "...7--7",
-      "...T...",
+      "..SXXXX",
+      ".YXYXYX",
+      "XXYXXYX",
+      "YXYXXYX",
+      "XXYXYXX",
+      "YXXYXYT",
+      ".......",
     ],
-    parMoves: 22,
+    parMoves: 38,
   },
-
-  // Level 7
   {
     id: 7,
     name: "Deep Access",
     size: 7,
     layout: [
-      ".S.....",
-      ".|.....",
-      ".L--R..",
-      "....|..",
-      "....L-J",
-      "......|",
-      "......T",
+      "SXXYXXX",
+      "YXYXYXY",
+      "XXYXXYX",
+      "YXXYXXX",
+      "XXYXYXY",
+      "YXYXXYT",
+      ".......",
     ],
-    parMoves: 26,
+    parMoves: 44,
   },
 ];

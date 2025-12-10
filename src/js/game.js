@@ -1,500 +1,349 @@
-// Directions: 0 = up, 1 = right, 2 = down, 3 = left
-const DIR_UP = 0;
-const DIR_RIGHT = 1;
-const DIR_DOWN = 2;
-const DIR_LEFT = 3;
+// main.js
+import * as THREE from "https://unpkg.com/three@0.170.0/build/three.module.js";
 
-function rotateConnections(conns, times = 1) {
-  return conns.map((c) => (c + times) % 4);
-}
+const container = document.getElementById("game-container");
+const statusEl = document.getElementById("status");
+const resetButton = document.getElementById("resetButton");
 
-function charToTile(ch, row, col) {
-  switch (ch) {
-    case "S":
-      return {
-        type: "SOURCE",
-        baseConnections: [DIR_UP, DIR_DOWN],
-        rotation: 0,
-        row,
-        col,
-      };
-    case "T":
-      return {
-        type: "TARGET",
-        baseConnections: [DIR_UP, DIR_DOWN],
-        rotation: 0,
-        row,
-        col,
-      };
-    case "|":
-      return {
-        type: "STRAIGHT",
-        baseConnections: [DIR_UP, DIR_DOWN],
-        rotation: randomRotation(),
-        row,
-        col,
-      };
-    case "-":
-      return {
-        type: "STRAIGHT",
-        baseConnections: [DIR_LEFT, DIR_RIGHT],
-        rotation: randomRotation(),
-        row,
-        col,
-      };
-    case "L": // up-right
-      return {
-        type: "CORNER",
-        baseConnections: [DIR_UP, DIR_RIGHT],
-        rotation: randomRotation(),
-        row,
-        col,
-      };
-    case "R": // right-down
-      return {
-        type: "CORNER",
-        baseConnections: [DIR_RIGHT, DIR_DOWN],
-        rotation: randomRotation(),
-        row,
-        col,
-      };
-    case "J": // down-left
-      return {
-        type: "CORNER",
-        baseConnections: [DIR_DOWN, DIR_LEFT],
-        rotation: randomRotation(),
-        row,
-        col,
-      };
-    case "7": // left-up
-      return {
-        type: "CORNER",
-        baseConnections: [DIR_LEFT, DIR_UP],
-        rotation: randomRotation(),
-        row,
-        col,
-      };
-    default:
-      return {
-        type: "EMPTY",
-        baseConnections: [],
-        rotation: 0,
-        row,
-        col,
-      };
-  }
-}
+// Basic Three.js setup
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050712);
 
-function randomRotation() {
-  return Math.floor(Math.random() * 4);
-}
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+container.appendChild(renderer.domElement);
 
-function oppositeDir(dir) {
-  return (dir + 2) % 4;
-}
+// Orthographic camera for a flat, UI-like look
+const aspect = container.clientWidth / container.clientHeight;
+const frustumSize = 10;
+const camera = new THREE.OrthographicCamera(
+  (frustumSize * aspect) / -2,
+  (frustumSize * aspect) / 2,
+  frustumSize / 2,
+  frustumSize / -2,
+  0.1,
+  100
+);
+camera.position.set(0, 0, 10);
+camera.lookAt(0, 0, 0);
 
-function neighborsOf(row, col) {
-  return [
-    { dir: DIR_UP, row: row - 1, col },
-    { dir: DIR_RIGHT, row, col: col + 1 },
-    { dir: DIR_DOWN, row: row + 1, col },
-    { dir: DIR_LEFT, row, col: col - 1 },
-  ];
-}
+// Lights
+const ambient = new THREE.AmbientLight(0x88aaff, 0.7);
+scene.add(ambient);
+const dir = new THREE.DirectionalLight(0xffffff, 0.7);
+dir.position.set(3, 5, 4);
+scene.add(dir);
 
-/* ===== GAME STATE ===== */
+// Grid configuration
+const GRID_SIZE = 5;
+const TILE_SIZE = 1.4;
+const tiles = []; // 2D array: tiles[row][col]
 
-const GameState = {
-  currentLevelIndex: 0,
-  grid: [],
-  gridSize: 0,
-  moves: 0,
-  timeStartMs: 0,
-  timerId: null,
-  hasWon: false,
-  dom: {},
+// Connection directions: 0=up,1=right,2=down,3=left
+const DIRS = [
+  { dx: 0, dy: 1 },
+  { dx: 1, dy: 0 },
+  { dx: 0, dy: -1 },
+  { dx: -1, dy: 0 },
+];
+
+const TILE_TYPES = {
+  STRAIGHT: "straight", // up-down
+  CORNER: "corner", // up-right
+  START: "start",
+  GOAL: "goal",
 };
 
-/* ===== GAME INITIALISATION ===== */
-
-document.addEventListener("DOMContentLoaded", () => {
-  cacheDom();
-  bindEvents();
-  showTitleScreen()
-  /*loadLevel(0);*/
-});
-
-function cacheDom() {
-  GameState.dom.grid = document.getElementById("grid");
-  GameState.dom.levelName = document.getElementById("level");
-  GameState.dom.statusText = document.getElementById("status");
-  GameState.dom.movesValue = document.getElementById("moves");
-  GameState.dom.timeValue = document.getElementById("time");
-  GameState.dom.resetBtn = document.getElementById("resetBtn");
-  GameState.dom.prevLevelBtn = document.getElementById("prevLevelBtn");
-  GameState.dom.nextLevelBtn = document.getElementById("nextLevelBtn");
-  GameState.dom.howToModal = document.getElementById("howToMode");
-  GameState.dom.helpBtn = document.getElementById("helpBtn");
-  GameState.dom.closeModalBtn = document.getElementById("closeModalBtn");
-  GameState.dom.gotItBtn = document.getElementById("gotItBtn");
-  GameState.dom.titleScreen = document.getElementById("titleScreen");
-  GameState.dom.playBtn = document.getElementById("playBtn");
-  GameState.dom.titleHelpBtn = document.getElementById("titleHelpBtn");
-}
-
-function bindEvents() {
-  GameState.dom.resetBtn.addEventListener("click", () => {
-    shuffleCurrentLevel();
-  });
-
-  GameState.dom.prevLevelBtn.addEventListener("click", () => {
-    if (GameState.currentLevelIndex > 0) {
-      loadLevel(GameState.currentLevelIndex - 1);
-    }
-  });
-
-  GameState.dom.nextLevelBtn.addEventListener("click", () => {
-    if (GameState.currentLevelIndex < LEVELS.length - 1) {
-      loadLevel(GameState.currentLevelIndex + 1);
-    }
-  });
-
-   // open modal
-  GameState.dom.helpBtn.addEventListener("click", () => {
-    openHowToModal();
-  });
-
-  // title screen buttons
-  GameState.dom.playBtn.addEventListener("click", () => {
-    startGameFromTitle();
-  });
-
-  GameState.dom.titleHelpBtn.addEventListener("click", () => {
-    openHowToModal();
-  });
-
-  // close modal buttons
-  GameState.dom.closeModalBtn.addEventListener("click", () => {
-    closeHowToModal();
-  });
-  GameState.dom.gotItBtn.addEventListener("click", () => {
-    closeHowToModal();
-  });
-
-  // click outside modal to close
-  GameState.dom.howToModal.addEventListener("click", (e) => {
-    if (e.target === GameState.dom.howToModal) {
-      closeHowToModal();
-    }
-  });
-
-  // Esc to close
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      closeHowToModal();
-    }
+// Utility: create material
+function createTileMaterial(color, emissive) {
+  return new THREE.MeshStandardMaterial({
+    color,
+    emissive,
+    metalness: 0.4,
+    roughness: 0.35,
   });
 }
 
-function showTitleScreen() {
-  GameState.dom.titleScreen.classList.remove("hidden");
-}
+const baseMaterial = createTileMaterial(0x0d1028, 0x060813);
+const pathMaterial = createTileMaterial(0x1a284f, 0x111841);
+const startMaterial = createTileMaterial(0x00ff99, 0x00aa66);
+const goalMaterial = createTileMaterial(0x33ccff, 0x1177aa);
+const activeMaterial = createTileMaterial(0xffff88, 0xffcc33);
 
-function hideTitleScreen() {
-  GameState.dom.titleScreen.classList.add("hidden");
-}
-
-function startGameFromTitle() {
-  hideTitleScreen();
-  loadLevel(0);
-}
-
-function loadLevel(index) {
-  clearTimer();
-
-  const level = LEVELS[index];
-  GameState.currentLevelIndex = index;
-  GameState.gridSize = level.size;
-  GameState.moves = 0;
-  GameState.hasWon = false;
-
-  GameState.dom.grid.classList.remove("win");
-  GameState.dom.levelName.textContent = `Level ${level.id}: ${level.name}`;
-  GameState.dom.movesValue.textContent = "0";
-  GameState.dom.statusText.innerHTML =
-    "Connect <strong>GREEN</strong> to <strong>PINK</strong>.";
-  GameState.dom.timeValue.textContent = "0.0s";
-  if (GameState.dom.parValue) {
-    GameState.dom.parValue.textContent = typeof level.parMoves === "number" ? String(level.parMoves) : "–";
+// Tile class (pure data + reference to mesh)
+class Tile {
+  constructor(row, col, type, rotation = 0) {
+    this.row = row;
+    this.col = col;
+    this.type = type;
+    this.rotation = rotation; // 0,1,2,3 * 90deg
+    this.mesh = null;
   }
 
-  GameState.dom.prevLevelBtn.disabled = index === 0;
-  GameState.dom.nextLevelBtn.disabled = index === LEVELS.length - 1;
-
-  buildGridFromLayout(level.layout, level.size);
-  renderGrid();
-  highlightPath();
-
-  startTimer();
-}
-
-function buildGridFromLayout(layout, size) {
-  const grid = [];
-  for (let row = 0; row < size; row++) {
-    const rowArr = [];
-    const line = layout[row] || "";
-    for (let col = 0; col < size; col++) {
-      const ch = line[col] || ".";
-      const tile = charToTile(ch, row, col);
-      rowArr.push(tile);
+  getConnections() {
+    // returns array of direction indices this tile connects to.
+    switch (this.type) {
+      case TILE_TYPES.STRAIGHT:
+        // up & down by default; rotate rotates these dirs
+        return [0, 2].map((d) => (d + this.rotation) % 4);
+      case TILE_TYPES.CORNER:
+        // up & right by default
+        return [0, 1].map((d) => (d + this.rotation) % 4);
+      case TILE_TYPES.START:
+      case TILE_TYPES.GOAL:
+        // treat as a straight by default so you can connect nicely
+        return [0, 2].map((d) => (d + this.rotation) % 4);
+      default:
+        return [];
     }
-    grid.push(rowArr);
   }
-  GameState.grid = grid;
-}
 
-/* ===== GAME RENDER ===== */
+  rotate() {
+    if (this.type === TILE_TYPES.START || this.type === TILE_TYPES.GOAL) return; // fixed
+    this.rotation = (this.rotation + 1) % 4;
+    if (this.mesh) {
+      this.mesh.rotation.z = (Math.PI / 2) * this.rotation;
+    }
+  }
 
-function renderGrid() {
-  const gridEl = GameState.dom.grid;
-  const size = GameState.gridSize;
-
-  gridEl.innerHTML = "";
-  gridEl.style.gridTemplateColumns = `repeat(${size}, 64px)`;
-  gridEl.style.gridTemplateRows = `repeat(${size}, 64px)`;
-
-  for (let row = 0; row < size; row++) {
-    for (let col = 0; col < size; col++) {
-      const tile = GameState.grid[row][col];
-      const tileEl = document.createElement("div");
-
-      tileEl.classList.add("tile");
-      tileEl.dataset.row = row;
-      tileEl.dataset.col = col;
-
-      if (tile.type === "EMPTY") {
-        tileEl.classList.add("empty");
-      }
-
-      const inner = document.createElement("div");
-      inner.classList.add("tile-inner");
-
-      if (tile.type === "SOURCE") {
-        tileEl.classList.add("tile-source");
-      } else if (tile.type === "TARGET") {
-        tileEl.classList.add("tile-target");
-      }
-
-      const effectiveConns = getEffectiveConnections(tile);
-      effectiveConns.forEach((dir) => {
-        const conn = document.createElement("div");
-        conn.classList.add("conn");
-        if (dir === DIR_UP) conn.classList.add("up");
-        if (dir === DIR_RIGHT) conn.classList.add("right");
-        if (dir === DIR_DOWN) conn.classList.add("down");
-        if (dir === DIR_LEFT) conn.classList.add("left");
-        inner.appendChild(conn);
-      });
-
-      tileEl.appendChild(inner);
-      gridEl.appendChild(tileEl);
-
-      tileEl.addEventListener("click", () => onTileClick(tile));
+  setVisualState(state) {
+    if (!this.mesh) return;
+    switch (state) {
+      case "normal":
+        if (this.type === TILE_TYPES.START) this.mesh.material = startMaterial;
+        else if (this.type === TILE_TYPES.GOAL) this.mesh.material = goalMaterial;
+        else this.mesh.material = baseMaterial;
+        break;
+      case "path":
+        if (this.type === TILE_TYPES.START) this.mesh.material = startMaterial;
+        else if (this.type === TILE_TYPES.GOAL) this.mesh.material = goalMaterial;
+        else this.mesh.material = pathMaterial;
+        break;
+      case "active":
+        this.mesh.material = activeMaterial;
+        break;
     }
   }
 }
 
-function getEffectiveConnections(tile) {
-  return rotateConnections(tile.baseConnections, tile.rotation);
-}
+// --- Level setup ---
 
-/* ===== GAME INTERACTION ===== */
+function createGrid() {
+  // Clear old tiles if any
+  tiles.length = 0;
 
-function onTileClick(tile) {
-  if (GameState.hasWon) return;
-  if (tile.type === "EMPTY" || tile.type === "SOURCE" || tile.type === "TARGET")
-    return;
+  // layout: simple start on left, goal on right
+  // You can make this data-driven later.
+  const mid = Math.floor(GRID_SIZE / 2);
 
-  tile.rotation = (tile.rotation + 1) % 4;
-  GameState.moves++;
-  GameState.dom.movesValue.textContent = String(GameState.moves);
+  for (let r = 0; r < GRID_SIZE; r++) {
+    tiles[r] = [];
+    for (let c = 0; c < GRID_SIZE; c++) {
+      let type = TILE_TYPES.STRAIGHT;
+      if (r === mid && c === 0) type = TILE_TYPES.START;
+      else if (r === mid && c === GRID_SIZE - 1) type = TILE_TYPES.GOAL;
+      else if (Math.random() < 0.5) type = TILE_TYPES.CORNER; // random mix
 
-  renderGrid();
-  const hasPath = highlightPath();
+      const tile = new Tile(r, c, type, Math.floor(Math.random() * 4));
+      tiles[r][c] = tile;
 
-  if (hasPath) {
-    onWin();
-  } else {
-    GameState.dom.statusText.innerHTML =
-      "Connect <strong>GREEN</strong> to <strong>PINK</strong>.";
-  }
-}
+      // Create mesh
+      const geom = new THREE.PlaneGeometry(TILE_SIZE * 0.9, TILE_SIZE * 0.9, 1, 1);
+      const mesh = new THREE.Mesh(geom, baseMaterial);
+      const x = (c - (GRID_SIZE - 1) / 2) * TILE_SIZE;
+      const y = (r - (GRID_SIZE - 1) / 2) * TILE_SIZE;
+      mesh.position.set(x, y, 0);
+      mesh.rotation.z = (Math.PI / 2) * tile.rotation;
 
-/* ===== PATH CHECKING ===== */
+      // slight elevation for nicer lighting
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
 
-function findSourceAndTarget() {
-  let source = null;
-  let target = null;
+      scene.add(mesh);
+      tile.mesh = mesh;
 
-  for (let row = 0; row < GameState.gridSize; row++) {
-    for (let col = 0; col < GameState.gridSize; col++) {
-      const tile = GameState.grid[row][col];
-      if (tile.type === "SOURCE") source = tile;
-      if (tile.type === "TARGET") target = tile;
+      // For picking
+      mesh.userData.tile = tile;
     }
   }
-  return { source, target };
+
+  // Apply visual state for start/goal
+  tiles[mid][0].setVisualState("normal");
+  tiles[mid][GRID_SIZE - 1].setVisualState("normal");
+
+  updatePathHighlight();
 }
 
-function highlightPath() {
-  const gridEl = GameState.dom.grid;
-  gridEl.classList.remove("win");
+// --- Pathfinding / connection logic ---
 
-  const tileEls = gridEl.querySelectorAll(".tile");
-  tileEls.forEach((el) => el.classList.remove("path"));
+function inBounds(r, c) {
+  return r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE;
+}
 
-  const { source, target } = findSourceAndTarget();
-  if (!source || !target) return false;
+function findStartAndGoal() {
+  let start = null;
+  let goal = null;
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      const t = tiles[r][c];
+      if (t.type === TILE_TYPES.START) start = t;
+      if (t.type === TILE_TYPES.GOAL) goal = t;
+    }
+  }
+  return { start, goal };
+}
 
+// Flood fill along connected tiles
+function computePath() {
+  const { start, goal } = findStartAndGoal();
+  if (!start || !goal) return { connected: false, visited: [] };
+
+  const queue = [];
   const visited = new Set();
   const parent = new Map();
-  const queue = [];
 
-  const key = (t) => `${t.row},${t.col}`;
+  const key = (r, c) => `${r},${c}`;
 
-  queue.push(source);
-  visited.add(key(source));
-
-  let found = false;
+  queue.push(start);
+  visited.add(key(start.row, start.col));
 
   while (queue.length > 0) {
     const current = queue.shift();
-    if (current === target) {
-      found = true;
-      break;
-    }
+    if (current === goal) break;
 
-    const conns = getEffectiveConnections(current);
-    const neighs = neighborsOf(current.row, current.col);
+    const conns = current.getConnections();
+    for (const dirIndex of conns) {
+      const { dx, dy } = DIRS[dirIndex];
+      const nr = current.row + dy;
+      const nc = current.col + dx;
+      if (!inBounds(nr, nc)) continue;
 
-    for (const n of neighs) {
-      if (!conns.includes(n.dir)) continue;
+      const neighbor = tiles[nr][nc];
+      if (!neighbor) continue;
 
-      if (
-        n.row < 0 ||
-        n.row >= GameState.gridSize ||
-        n.col < 0 ||
-        n.col >= GameState.gridSize
-      ) {
-        continue;
-      }
+      // Check that neighbor connects back
+      const opposite = (dirIndex + 2) % 4;
+      const neighborConns = neighbor.getConnections();
+      if (!neighborConns.includes(opposite)) continue;
 
-      const neighborTile = GameState.grid[n.row][n.col];
-      const neighborConns = getEffectiveConnections(neighborTile);
-
-      if (!neighborConns.includes(oppositeDir(n.dir))) continue;
-
-      const neighborKey = key(neighborTile);
-      if (!visited.has(neighborKey)) {
-        visited.add(neighborKey);
-        parent.set(neighborKey, key(current));
-        queue.push(neighborTile);
+      const k = key(nr, nc);
+      if (!visited.has(k)) {
+        visited.add(k);
+        parent.set(neighbor, current);
+        queue.push(neighbor);
       }
     }
   }
 
-  if (!found) return false;
+  const connected = visited.has(key(goal.row, goal.col));
 
-  // Reconstruct path from target back to source
-  let currentKey = key(target);
-  while (currentKey) {
-    const [r, c] = currentKey.split(",").map(Number);
-    const tileEl = GameState.dom.grid.querySelector(
-      `.tile[data-row="${r}"][data-col="${c}"]`
-    );
-    if (tileEl) tileEl.classList.add("path");
-    currentKey = parent.get(currentKey);
-  }
-
-  return true;
-}
-
-/* ===== WIN / RESET / TIMER ===== */
-
-function onWin() {
-  GameState.hasWon = true;
-  clearTimer();
-
-  GameState.dom.grid.classList.add("win");
-  GameState.dom.statusText.innerHTML = "<strong>ACCESS GRANTED</strong>.";
-
-  const level = LEVELS[GameState.currentLevelIndex];
-  if (level.parMoves && GameState.moves <= level.parMoves) {
-    GameState.dom.statusText.innerHTML +=
-      " <span style='color:#5cff6a'>Par cleared!</span>";
-  } else if (level.parMoves) {
-    GameState.dom.statusText.innerHTML += ` <span style='color:#9fb7d4'>(Par: ${level.parMoves})</span>`;
-  }
-}
-
-function shuffleCurrentLevel() {
-  const level = LEVELS[GameState.currentLevelIndex];
-  buildGridFromLayout(level.layout, level.size);
-
-  // Randomize rotations only for non-empty, non-source/target tiles
-  for (let row = 0; row < GameState.gridSize; row++) {
-    for (let col = 0; col < GameState.gridSize; col++) {
-      const tile = GameState.grid[row][col];
-      if (
-        tile.type !== "EMPTY" &&
-        tile.type !== "SOURCE" &&
-        tile.type !== "TARGET"
-      ) {
-        tile.rotation = randomRotation();
+  let pathTiles = [];
+  if (connected) {
+    // Reconstruct path from goal -> start
+    let cur = goal;
+    while (cur) {
+      pathTiles.push(cur);
+      cur = parent.get(cur) || (cur === start ? null : null);
+      if (cur === start) {
+        pathTiles.push(start);
+        break;
       }
     }
   }
 
-  GameState.moves = 0;
-  GameState.dom.movesValue.textContent = "0";
-  GameState.hasWon = false;
-  GameState.dom.grid.classList.remove("win");
-  GameState.dom.statusText.innerHTML =
-    "Connect <strong>GREEN</strong> to <strong>PINK</strong>.";
-
-  clearTimer();
-  GameState.dom.timeValue.textContent = "0.0s";
-  startTimer();
-
-  renderGrid();
-  highlightPath();
+  return { connected, visited: Array.from(visited), pathTiles };
 }
 
-function startTimer() {
-  GameState.timeStartMs = performance.now();
-  GameState.timerId = requestAnimationFrame(updateTimer);
-}
+function updatePathHighlight() {
+  // reset visuals
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      tiles[r][c].setVisualState("normal");
+    }
+  }
 
-function updateTimer() {
-  if (GameState.hasWon) return;
-
-  const now = performance.now();
-  const elapsed = (now - GameState.timeStartMs) / 1000;
-  GameState.dom.timeValue.textContent = `${elapsed.toFixed(1)}s`;
-  GameState.timerId = requestAnimationFrame(updateTimer);
-}
-
-function clearTimer() {
-  if (GameState.timerId !== null) {
-    cancelAnimationFrame(GameState.timerId);
-    GameState.timerId = null;
+  const { connected, pathTiles } = computePath();
+  if (connected) {
+    pathTiles.forEach((tile) => tile.setVisualState("path"));
+    statusEl.textContent = "✅ Access Granted!";
+  } else {
+    statusEl.textContent = "";
   }
 }
 
-function openHowToModal() {
-  GameState.dom.howToModal.classList.remove("hidden");
+// --- Interaction (raycasting) ---
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+function onPointerDown(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  mouse.set(x, y);
+
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(scene.children, false);
+
+  if (intersects.length > 0) {
+    const mesh = intersects[0].object;
+    const tile = mesh.userData.tile;
+    if (tile) {
+      tile.rotate();
+      updatePathHighlight();
+    }
+  }
 }
 
-function closeHowToModal() {
-  GameState.dom.howToModal.classList.add("hidden");
+// --- Resize handling ---
+
+function onResize() {
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  renderer.setSize(width, height);
+
+  const aspect = width / height;
+  camera.left = (frustumSize * aspect) / -2;
+  camera.right = (frustumSize * aspect) / 2;
+  camera.top = frustumSize / 2;
+  camera.bottom = frustumSize / -2;
+  camera.updateProjectionMatrix();
 }
+
+window.addEventListener("resize", onResize);
+renderer.domElement.addEventListener("pointerdown", onPointerDown);
+
+resetButton.addEventListener("click", () => {
+  // remove all meshes from scene except lights
+  const toRemove = [];
+  scene.traverse((obj) => {
+    if (obj.isMesh && obj.userData.tile) {
+      toRemove.push(obj);
+    }
+  });
+  toRemove.forEach((m) => scene.remove(m));
+
+  createGrid();
+});
+
+// --- Animation loop ---
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  // subtle pulsing effect
+  const t = performance.now() * 0.001;
+  scene.traverse((obj) => {
+    if (obj.isMesh && obj.userData.tile) {
+      obj.position.z = Math.sin(t * 2 + obj.position.x * 0.5 + obj.position.y * 0.5) * 0.03;
+    }
+  });
+
+  renderer.render(scene, camera);
+}
+
+// Init
+onResize();
+createGrid();
+animate();
