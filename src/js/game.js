@@ -51,97 +51,48 @@ let hasStarted = false;
 let isSolved = false;
 
 // LEVEL DATA
-const pattern = [
+// NOTE: we use `targets: []` so you can have multiple bulbs if you want
+const patterns = [
   {
-    name: "01 · Linked Towers",
+    name: "01 · Circuit Intro",
     difficulty: "easy",
     time: 60,
-    start: 1,
-    end: 23,
-
-    tiles: {
-      1:  DIR.DOWN,
-      6:  DIR.UP | DIR.DOWN,
-      11: DIR.UP | DIR.RIGHT,
-      12: DIR.LEFT | DIR.RIGHT,
-      13: DIR.LEFT | DIR.DOWN,
-      18: DIR.UP | DIR.DOWN,
-      23: DIR.UP
-    },
-    locked: [1, 23]
-  },
-
-  {
-    name: "02 · Tall Zig",
-    difficulty: "easy",
-    time: 55,
     start: 0,
-    end: 22,
-
+    targets: [22],
     tiles: {
-      0:  DIR.DOWN,
-      5:  DIR.UP | DIR.DOWN,
-      10: DIR.UP | DIR.RIGHT,
-      11: DIR.LEFT | DIR.RIGHT,
-      12: DIR.LEFT | DIR.DOWN,
-      17: DIR.UP | DIR.DOWN,
-      22: DIR.UP
+      0:  DIR.DOWN,                   // start
+      5:  DIR.UP | DIR.DOWN,          // vertical
+      10: DIR.UP | DIR.RIGHT,         // L-curve
+      11: DIR.LEFT | DIR.RIGHT,       // horizontal
+      12: DIR.LEFT | DIR.DOWN,        // L-curve
+      17: DIR.UP | DIR.DOWN,          // vertical
+      22: DIR.UP                      // target
     },
     locked: [0, 22]
   },
 
   {
-    name: "03 · Diagonal Sweep",
-    difficulty: "medium",
-    time: 50,
+    name: "02 · Sweep Line",
+    difficulty: "easy",
+    time: 55,
     start: 0,
-    end: 24,
-
+    targets: [24],
     tiles: {
-      0:  DIR.RIGHT,
-      1:  DIR.LEFT | DIR.RIGHT,
-      2:  DIR.LEFT | DIR.DOWN,
-      7:  DIR.UP | DIR.DOWN,
-      12: DIR.UP | DIR.DOWN,
-      17: DIR.UP | DIR.DOWN,
-      22: DIR.UP | DIR.RIGHT,
-      23: DIR.LEFT | DIR.RIGHT,
-      24: DIR.LEFT
+      0:  DIR.RIGHT,                  // 0 → 1
+      1:  DIR.LEFT | DIR.RIGHT,       // 0 ↔ 2
+      2:  DIR.LEFT | DIR.DOWN,        // 1 ↘ 7
+      7:  DIR.UP | DIR.DOWN,          // 2 ↕ 12
+      12: DIR.UP | DIR.DOWN,          // 7 ↕ 17
+      17: DIR.UP | DIR.RIGHT,         // 12 ↘ 18
+      18: DIR.LEFT | DIR.RIGHT,       // 17 ↔ 19
+      19: DIR.LEFT | DIR.DOWN,        // 18 ↘ 24
+      24: DIR.UP                      // 19 ↑
     },
     locked: [0, 24]
-  },
-
-  {
-    name: "04 · Frame Tail",
-    difficulty: "hard",
-    time: 55,
-    start: 1,
-    end: 6,
-
-    tiles: {
-      1:  DIR.RIGHT,
-      2:  DIR.LEFT | DIR.RIGHT,
-      3:  DIR.LEFT | DIR.RIGHT,
-      4:  DIR.LEFT | DIR.DOWN,
-
-      9:  DIR.UP | DIR.DOWN,
-      14: DIR.UP | DIR.DOWN,
-      19: DIR.UP | DIR.DOWN,
-
-      24: DIR.UP | DIR.LEFT,
-      23: DIR.RIGHT | DIR.LEFT,
-      22: DIR.RIGHT | DIR.LEFT,
-      21: DIR.RIGHT | DIR.UP,
-
-      16: DIR.DOWN | DIR.UP,
-      11: DIR.DOWN | DIR.UP,
-      6:  DIR.DOWN
-    },
-    locked: [1, 6]
   }
 ];
 
-// GAME HELPERS 
+// HELPERS
 function idxToRC(i) {
   return [Math.floor(i / GRID_SIZE), i % GRID_SIZE];
 }
@@ -160,7 +111,6 @@ function rotateMask(mask, steps) {
   return m;
 }
 
-// Is this mask a corner (curve) piece?
 function isCurve(mask) {
   return (
     mask === (DIR.UP | DIR.RIGHT)  ||
@@ -170,41 +120,11 @@ function isCurve(mask) {
   );
 }
 
-// Render straight vs curve for a tile based on its current mask
-function renderTile(tile) {
-  const m = tile.mask;
-
-  // Hide both by default
-  tile.straight.style.display = "none";
-  tile.curve.style.display = "none";
-
-  if (!m) return;
-
-  if (isCurve(m)) {
-    tile.curve.style.display = "block";
-
-    if (m === (DIR.UP | DIR.RIGHT)) {
-      tile.curve.style.transform = "translate(-50%, -50%) rotate(0deg)";
-    } else if (m === (DIR.RIGHT | DIR.DOWN)) {
-      tile.curve.style.transform = "translate(-50%, -50%) rotate(90deg)";
-    } else if (m === (DIR.DOWN | DIR.LEFT)) {
-      tile.curve.style.transform = "translate(-50%, -50%) rotate(180deg)";
-    } else if (m === (DIR.LEFT | DIR.UP)) {
-      tile.curve.style.transform = "translate(-50%, -50%) rotate(270deg)";
-    }
-  } else {
-    // straight: vertical or horizontal
-    tile.straight.style.display = "block";
-
-    if (m === (DIR.UP | DIR.DOWN)) {
-      tile.straight.style.transform = "translate(-50%, -50%) rotate(0deg)";
-    } else if (m === (DIR.LEFT | DIR.RIGHT)) {
-      tile.straight.style.transform = "translate(-50%, -50%) rotate(90deg)";
-    } else {
-      // any other weird mask – hide (safety)
-      tile.straight.style.display = "none";
-    }
-  }
+function isStraight(mask) {
+  return (
+    mask === (DIR.UP | DIR.DOWN) ||
+    mask === (DIR.LEFT | DIR.RIGHT)
+  );
 }
 
 // GRID CREATION
@@ -250,7 +170,53 @@ function createGrid() {
   }
 }
 
-// GAME THEME / HUD 
+// RENDERING (straight + L-curve)
+function renderTile(tile) {
+  const m = tile.mask;
+
+  tile.straight.style.display = "none";
+  tile.curve.style.display = "none";
+
+  if (!m) return;
+
+  // Straight
+  if (isStraight(m)) {
+    tile.straight.style.display = "block";
+
+    if (m === (DIR.UP | DIR.DOWN)) {
+      tile.straight.style.transform =
+        "translate(-50%, -50%) rotate(0deg)";
+    } else {
+      tile.straight.style.transform =
+        "translate(-50%, -50%) rotate(90deg)";
+    }
+    return;
+  }
+
+  // L-curve
+  if (isCurve(m)) {
+    tile.curve.style.display = "block";
+
+    let rotation = 0;
+    if (m === (DIR.UP | DIR.RIGHT)) {
+      rotation = 0;
+    } else if (m === (DIR.RIGHT | DIR.DOWN)) {
+      rotation = 90;
+    } else if (m === (DIR.DOWN | DIR.LEFT)) {
+      rotation = 180;
+    } else if (m === (DIR.LEFT | DIR.UP)) {
+      rotation = 270;
+    }
+
+    tile.curve.style.transform =
+      `translate(-50%, -50%) rotate(${rotation}deg)`;
+    return;
+  }
+
+  // anything else: hide (safety)
+}
+
+// THEME / HUD
 function applyTheme(pattern) {
   document.body.classList.remove("theme-easy", "theme-medium", "theme-hard");
   document.body.classList.add(`theme-${pattern.difficulty}`);
@@ -268,11 +234,11 @@ function applyPattern(startTimer = true) {
   applyTheme(pattern);
 
   const lockedSet = new Set(pattern.locked || []);
+  const targetSet = new Set(pattern.targets || []);
 
   isSolved = false;
   nextBtn.disabled = true;
 
-  // reset tiles
   tiles.forEach((tile) => {
     tile.baseMask = 0;
     tile.mask = 0;
@@ -280,11 +246,12 @@ function applyPattern(startTimer = true) {
     tile.movable = false;
     tile.isEndpoint = false;
     tile.element.className = "tile inactive";
+
     tile.straight.style.display = "none";
     tile.curve.style.display = "none";
   });
 
-  // apply solved pattern
+  // place pattern tiles
   Object.entries(pattern.tiles).forEach(([idxStr, mask]) => {
     const idx = Number(idxStr);
     const tile = tiles[idx];
@@ -301,7 +268,7 @@ function applyPattern(startTimer = true) {
       tile.element.classList.remove("active-blue");
       tile.element.classList.add("active-green");
       tile.isEndpoint = true;
-    } else if (idx === pattern.end) {
+    } else if (targetSet.has(idx)) {
       tile.element.classList.remove("active-blue");
       tile.element.classList.add("active-pink");
       tile.isEndpoint = true;
@@ -312,7 +279,7 @@ function applyPattern(startTimer = true) {
     renderTile(tile);
   });
 
-  // scramble movable pieces
+  // scramble movable tiles
   scrambleMovable(pattern);
 
   moves = 0;
@@ -328,12 +295,12 @@ function applyPattern(startTimer = true) {
   }
 }
 
-// SCRAMBLE / ROTATION 
+// SCRAMBLE / ROTATION
 function scrambleMovable(pattern) {
   tiles.forEach((tile) => {
     if (!tile.movable || tile.baseMask === 0) return;
 
-    const steps = Math.floor(Math.random() * 4); 
+    const steps = Math.floor(Math.random() * 4);
     tile.rotStep = steps;
     tile.mask = rotateMask(tile.baseMask, tile.rotStep);
     tile.element.classList.remove("solved", "path-glow");
@@ -344,7 +311,7 @@ function scrambleMovable(pattern) {
 
 function onTileClick(tile) {
   if (!hasStarted || !tile.movable || tile.baseMask === 0) return;
-  if (isSolved) return; // lock after solved
+  if (isSolved) return;
 
   tile.rotStep = (tile.rotStep + 1) % 4;
   tile.mask = rotateMask(tile.baseMask, tile.rotStep);
@@ -357,77 +324,94 @@ function onTileClick(tile) {
   checkSolved();
 }
 
-// SOLUTION CHECK 
-function checkSolved() {
-  const pattern = patterns[patternIndex];
-  const masks = tiles.map((t) => t.mask);
+// BUILD ADJACENCY (local validity)
+function buildAdjacency(masks, activeSet) {
+  const adjacency = new Map();
+  activeSet.forEach((idx) => adjacency.set(idx, []));
 
-  // every active port must have a matching neighbour
-  for (let i = 0; i < masks.length; i++) {
-    const m = masks[i];
-    if (!m) continue;
-    const [r, c] = idxToRC(i);
+  for (const idx of activeSet) {
+    const mask = masks[idx];
+    if (!mask) return null;
+
+    const [r, c] = idxToRC(idx);
 
     for (const d of ALL_DIRS) {
-      if (!(m & d.bit)) continue;
+      if (!(mask & d.bit)) continue;
 
       const nr = r + d.dr;
       const nc = c + d.dc;
 
       if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) {
-        return; // open to outside
+        return null; // open end off-board
       }
 
       const ni = nr * GRID_SIZE + nc;
-      const nm = masks[ni];
+      const neighbourMask = masks[ni];
 
-      if (!nm || !(nm & d.opposite)) {
-        return; // neighbour not connected back
+      if (!activeSet.has(ni)) {
+        return null; // connects into non-wire
       }
+
+      if (!neighbourMask || !(neighbourMask & d.opposite)) {
+        return null; // neighbour doesn't connect back
+      }
+
+      adjacency.get(idx).push(ni);
     }
   }
 
-  // BFS from start must reach end
-  const visited = new Array(masks.length).fill(false);
-  const startIdx = pattern.start;
-  const endIdx = pattern.end;
+  return adjacency;
+}
 
-  if (!masks[startIdx] || !masks[endIdx]) return;
+// SOLUTION CHECK
+function checkSolved() {
+  const pattern = patterns[patternIndex];
+  const masks = tiles.map((t) => t.mask);
+
+  const startIdx = pattern.start;
+  const targets = pattern.targets || [];
+
+  const activeIndices = Object.keys(pattern.tiles).map(Number);
+  const activeSet = new Set(activeIndices);
+
+  if (!activeSet.has(startIdx)) return;
+  for (const t of targets) {
+    if (!activeSet.has(t)) return;
+  }
+
+  if (!masks[startIdx]) return;
+
+  const adjacency = buildAdjacency(masks, activeSet);
+  if (!adjacency) return;
+
+  const visited = new Map();
+  activeSet.forEach((idx) => visited.set(idx, false));
 
   const queue = [startIdx];
-  visited[startIdx] = true;
+  visited.set(startIdx, true);
 
   while (queue.length > 0) {
-    const i = queue.shift();
-    const m = masks[i];
-    if (!m) continue;
-    const [r, c] = idxToRC(i);
+    const current = queue.shift();
+    const neighbours = adjacency.get(current) || [];
 
-    for (const d of ALL_DIRS) {
-      if (!(m & d.bit)) continue;
-
-      const nr = r + d.dr;
-      const nc = c + d.dc;
-      if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) continue;
-
-      const ni = nr * GRID_SIZE + nc;
-      if (!masks[ni] || !(masks[ni] & d.opposite)) continue;
-
-      if (!visited[ni]) {
-        visited[ni] = true;
-        queue.push(ni);
+    for (const nb of neighbours) {
+      if (!visited.get(nb)) {
+        visited.set(nb, true);
+        queue.push(nb);
       }
     }
   }
 
-  if (!visited[endIdx]) return;
-
-  // no isolated islands
-  for (let i = 0; i < masks.length; i++) {
-    if (masks[i] && !visited[i]) return;
+  // all targets reachable
+  for (const t of targets) {
+    if (!visited.get(t)) return;
   }
 
-  // Solved
+  // all wire tiles visited
+  for (const idx of activeSet) {
+    if (!visited.get(idx)) return;
+  }
+
   isSolved = true;
   nextBtn.disabled = false;
 
@@ -437,37 +421,38 @@ function checkSolved() {
   }
   timeRemaining = Math.max(timeRemaining, 0);
   updateTimerLabel();
-  playSolveAnimation();
+
+  playSolveAnimation(visited);
 }
 
-function playSolveAnimation() {
+// SOLVE ANIMATION
+function playSolveAnimation(visitedMap) {
   const pattern = patterns[patternIndex];
   const masks = tiles.map((t) => t.mask);
-  const distances = new Array(masks.length).fill(Infinity);
   const start = pattern.start;
 
-  distances[start] = 0;
+  const activeIndices = Object.keys(pattern.tiles).map(Number);
+  const activeSet = new Set(activeIndices);
+  const adjacency = buildAdjacency(masks, activeSet);
+  if (!adjacency) return;
+
+  const distances = new Map();
+  activeSet.forEach((idx) => distances.set(idx, Infinity));
+  distances.set(start, 0);
+
   const q = [start];
 
   while (q.length > 0) {
-    const i = q.shift();
-    const m = masks[i];
-    if (!m) continue;
-    const [r, c] = idxToRC(i);
+    const current = q.shift();
+    const currentDist = distances.get(current);
+    const neighbours = adjacency.get(current) || [];
 
-    for (const d of ALL_DIRS) {
-      if (!(m & d.bit)) continue;
+    for (const nb of neighbours) {
+      if (!visitedMap.get(nb)) continue;
 
-      const nr = r + d.dr;
-      const nc = c + d.dc;
-      if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) continue;
-
-      const ni = nr * GRID_SIZE + nc;
-      if (!masks[ni] || !(masks[ni] & d.opposite)) continue;
-
-      if (distances[ni] > distances[i] + 1) {
-        distances[ni] = distances[i] + 1;
-        q.push(ni);
+      if (distances.get(nb) > currentDist + 1) {
+        distances.set(nb, currentDist + 1);
+        q.push(nb);
       }
     }
   }
@@ -475,8 +460,9 @@ function playSolveAnimation() {
   const stepMs = 80;
 
   tiles.forEach((tile, idx) => {
-    if (!tile.mask) return;
-    const dist = distances[idx];
+    if (!visitedMap.get(idx)) return;
+
+    const dist = distances.get(idx);
     if (!isFinite(dist)) return;
     const delay = dist * stepMs;
 
@@ -490,7 +476,7 @@ function playSolveAnimation() {
   });
 }
 
-// GAME TIMER 
+// TIMER
 function updateTimerLabel() {
   timerDisplay.textContent = timeRemaining.toFixed(1) + "s";
 }
@@ -542,7 +528,7 @@ prevBtn.addEventListener("click", () => {
 });
 
 nextBtn.addEventListener("click", () => {
-  if (!isSolved) return; 
+  if (!isSolved) return;
   const nextIndex = (patternIndex + 1) % patterns.length;
   transitionToPattern(nextIndex);
 });
@@ -553,7 +539,8 @@ shuffleBtn.addEventListener("click", () => {
 
   moves = 0;
   movesLabel.textContent = "0";
-  timeRemaining = pattern.time || BASE_TIME;
+  timeRemaining =
+    pattern.time || BASE_TIME;
   updateTimerLabel();
   if (hasStarted) restartTimer();
 
@@ -594,7 +581,7 @@ if (closeSettingsBtn && settingsModal) {
   });
 });
 
-// Start screen → game screen
+// START SCREEN → GAME
 startBtn.addEventListener("click", () => {
   hasStarted = true;
 
@@ -607,6 +594,6 @@ startBtn.addEventListener("click", () => {
   restartTimer();
 });
 
-// BOOT 
+// BOOT
 createGrid();
 applyPattern(false);
