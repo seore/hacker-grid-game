@@ -170,7 +170,6 @@ function createGrid() {
   }
 }
 
-// RENDERING (straight + L-curve)
 function renderTile(tile) {
   const m = tile.mask;
 
@@ -212,8 +211,6 @@ function renderTile(tile) {
       `translate(-50%, -50%) rotate(${rotation}deg)`;
     return;
   }
-
-  // anything else: hide (safety)
 }
 
 // THEME / HUD
@@ -425,7 +422,17 @@ function checkSolved() {
   playSolveAnimation(visited);
 }
 
-// SOLVE ANIMATION
+function lerpColor(c1, c2, t) {
+  const r = Math.round(c1.r + (c2.r - c1.r) * t);
+  const g = Math.round(c1.g + (c2.g - c1.g) * t);
+  const b = Math.round(c1.b + (c2.b - c1.b) * t);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+const START_COLOR = { r: 34, g: 197, b: 94 };
+const END_COLOR = { r: 236, g: 72,  b: 153 };
+
+// SOLUTION ANIMATION
 function playSolveAnimation(visitedMap) {
   const pattern = patterns[patternIndex];
   const masks = tiles.map((t) => t.mask);
@@ -433,9 +440,11 @@ function playSolveAnimation(visitedMap) {
 
   const activeIndices = Object.keys(pattern.tiles).map(Number);
   const activeSet = new Set(activeIndices);
+
   const adjacency = buildAdjacency(masks, activeSet);
   if (!adjacency) return;
 
+  // BFS to get distances from start
   const distances = new Map();
   activeSet.forEach((idx) => distances.set(idx, Infinity));
   distances.set(start, 0);
@@ -457,17 +466,32 @@ function playSolveAnimation(visitedMap) {
     }
   }
 
+  // find the maximum distance among powered tiles
+  let maxDist = 0;
+  activeSet.forEach((idx) => {
+    if (!visitedMap.get(idx)) return;
+    const d = distances.get(idx);
+    if (isFinite(d) && d > maxDist) {
+      maxDist = d;
+    }
+  });
+
   const stepMs = 80;
 
+  // animate with colour gradient based on distance
   tiles.forEach((tile, idx) => {
     if (!visitedMap.get(idx)) return;
 
     const dist = distances.get(idx);
     if (!isFinite(dist)) return;
+
     const delay = dist * stepMs;
+    const t = maxDist === 0 ? 0 : dist / maxDist; 
+    const blended = lerpColor(START_COLOR, END_COLOR, t);
 
     setTimeout(() => {
-      tile.element.classList.add("path-glow", "solved");
+      tile.element.classList.add("solved", "path-glow");
+      tile.element.style.setProperty("--solved-color", blended);
     }, delay);
 
     setTimeout(() => {
@@ -475,6 +499,7 @@ function playSolveAnimation(visitedMap) {
     }, delay + 400);
   });
 }
+
 
 // TIMER
 function updateTimerLabel() {
