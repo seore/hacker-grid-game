@@ -6,11 +6,6 @@ Your goal: rotate L-shaped and straight pipe tiles to create a perfect data conn
 
 ---
 
-## 🎮 Live Demo  
-👉 **Play the game here:** 
-
----
-
 ## 🚀 Features
 
 ### 🧩 **Core Gameplay**
@@ -50,3 +45,9 @@ Your goal: rotate L-shaped and straight pipe tiles to create a perfect data conn
 - **Vanilla JavaScript** (game logic, rendering, input system)
 - **LocalStorage** (progress, achievements, settings)
 - **No frameworks required** — runs in any modern browser.
+
+---
+
+
+## 🎮 Live Demo  
+**Play the game here:**  https://seore.github.io/hacker-grid-game/
