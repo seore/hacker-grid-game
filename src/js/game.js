@@ -259,6 +259,59 @@ function saveAchievements() {
   }
 }
 
+// SETTINGS / THEMES / MODES
+function applyThemeClass(name) {
+  THEMES.forEach(t => document.body.classList.remove(`theme-${t}`));
+  document.body.classList.add(`theme-${name}`);
+}
+
+function nextTheme() {
+  currentThemeIndex = (currentThemeIndex + 1) % THEMES.length;
+  const name = THEMES[currentThemeIndex];
+  applyThemeClass(name);
+  saveSettings();
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  saveSettings();
+}
+
+function saveSettings() {
+  try {
+    const settings = {
+      theme: THEMES[currentThemeIndex],
+      mode: currentMode
+    };
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+  } catch (e) {
+    console.warn("Failed to save settings", e);
+  }
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s.theme && THEMES.includes(s.theme)) {
+      currentThemeIndex = THEMES.indexOf(s.theme);
+      applyThemeClass(s.theme);
+    }
+    if (s.mode && Object.values(MODES).includes(s.mode)) {
+      currentMode = s.mode;
+    }
+  } catch (e) {
+    console.warn("Failed to load settings", e);
+  }
+}
+
+function getMoveLimitForPattern(idx) {
+  const p = patterns[idx];
+  if (typeof p.maxMoves === "number") return p.maxMoves;
+  return MODE_SETTINGS[MODES.MOVES].moveLimit;
+}
+
 // GRID CREATION
 function createGrid() {
   gridElement.innerHTML = "";
