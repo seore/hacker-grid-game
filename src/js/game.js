@@ -641,6 +641,52 @@ function buildAdjacency(masks, activeSet) {
   return adjacency;
 }
 
+// STARS / ACHIEVEMENTS
+function getStarsForSolve(elapsedSeconds, movesCount) {
+  let stars = 1;
+  if (elapsedSeconds <= 25 && movesCount <= 14) stars = 2;
+  if (elapsedSeconds <= 15 && movesCount <= 10) stars = 3;
+  return stars;
+}
+
+function updateAchievements(patternIdx, stars, elapsedSeconds, movesCount) {
+  if (elapsedSeconds < 20) achievements.speedrunner1 = true;
+  if (elapsedSeconds < 10) achievements.speedrunner2 = true;
+
+  if (movesCount <= 12) achievements.efficiency1 = true;
+  if (movesCount <= 8)  achievements.efficiency2 = true;
+
+  if (!usedShuffleThisRun) achievements.perfectPath = true;
+
+  const all3 = patterns.every((p, idx) => {
+    if (p.procedural) return true;
+    return (progress.stars[idx] || 0) >= 3;
+  });
+  if (all3) achievements.allCleared = true;
+
+  saveAchievements();
+}
+
+function onLevelSolved(patternIdx, elapsedSeconds) {
+  const prevStars = progress.stars[patternIdx] || 0;
+  const stars = getStarsForSolve(elapsedSeconds, moves);
+
+  progress.solved[patternIdx] = true;
+  progress.stars[patternIdx] = Math.max(prevStars, stars);
+
+  const bestTime = progress.bestTime[patternIdx];
+  if (!bestTime || elapsedSeconds < bestTime) {
+    progress.bestTime[patternIdx] = elapsedSeconds;
+  }
+  const bestMoves = progress.bestMoves[patternIdx];
+  if (!bestMoves || moves < bestMoves) {
+    progress.bestMoves[patternIdx] = moves;
+  }
+
+  saveProgress();
+  updateAchievements(patternIdx, stars, elapsedSeconds, moves);
+}
+
 // SOLUTION CHECK
 function checkSolved() {
   const pattern = patterns[patternIndex];
@@ -680,12 +726,10 @@ function checkSolved() {
     }
   }
 
-  // all targets reachable
   for (const t of targets) {
     if (!visited.get(t)) return;
   }
 
-  // all wire tiles visited
   for (const idx of activeSet) {
     if (!visited.get(idx)) return;
   }
@@ -700,7 +744,12 @@ function checkSolved() {
   timeRemaining = Math.max(timeRemaining, 0);
   updateTimerLabel();
 
+  const baseTime = patterns[patternIndex].time || BASE_TIME;
+  const elapsed = baseTime - timeRemaining;
+  
+  onLevelSolved(patternIndex, elapsed);
   playSolveAnimation(visited);
+  playSfx("solved");
 }
 
 // SOLUTION ANIMATION
@@ -711,11 +760,9 @@ function playSolveAnimation(visitedMap) {
 
   const activeIndices = Object.keys(pattern.tiles).map(Number);
   const activeSet = new Set(activeIndices);
-
   const adjacency = buildAdjacency(masks, activeSet);
   if (!adjacency) return;
 
-  // BFS to get distances from start
   const distances = new Map();
   activeSet.forEach((idx) => distances.set(idx, Infinity));
   distances.set(start, 0);
@@ -729,7 +776,6 @@ function playSolveAnimation(visitedMap) {
 
     for (const nb of neighbours) {
       if (!visitedMap.get(nb)) continue;
-
       if (distances.get(nb) > currentDist + 1) {
         distances.set(nb, currentDist + 1);
         q.push(nb);
@@ -772,7 +818,7 @@ function playSolveAnimation(visitedMap) {
 }
 
 
-// TIMER
+// GAME TIMER
 function updateTimerLabel() {
   timerDisplay.textContent = timeRemaining.toFixed(1) + "s";
 }
@@ -795,6 +841,7 @@ function restartTimer() {
       clearInterval(timer);
       timer = null;
       flashTimeout();
+      playSfx("fail");
       return;
     }
     updateTimerLabel();
@@ -818,37 +865,42 @@ function transitionToPattern(nextIndex) {
   }, 220);
 }
 
+// EVENT LISTENERS
 prevBtn.addEventListener("click", () => {
+  playSfx("click")
   const nextIndex = (patternIndex - 1 + patterns.length) % patterns.length;
   transitionToPattern(nextIndex);
 });
 
 nextBtn.addEventListener("click", () => {
   if (!isSolved) return;
+  playSfx("click")
   const nextIndex = (patternIndex + 1) % patterns.length;
   transitionToPattern(nextIndex);
 });
 
 shuffleBtn.addEventListener("click", () => {
+  playSfx("click");
   const pattern = patterns[patternIndex];
   scrambleMovable(pattern);
 
   moves = 0;
   movesLabel.textContent = "0";
-  timeRemaining =
-    pattern.time || BASE_TIME;
+  timeRemaining = pattern.time || BASE_TIME;
   updateTimerLabel();
   if (hasStarted) restartTimer();
 
   isSolved = false;
   nextBtn.disabled = true;
+  usedShuffleThisRun = true;
 });
 
 restartBtn.addEventListener("click", () => {
+  playSfx("click");
   applyPattern(true);
 });
 
-// HOME SCREEN & MODALS 
+// MODALS 
 function openModal(modal) {
   if (!modal) return;
   modal.classList.add("home-modal-open");
@@ -859,10 +911,16 @@ function closeModal(modal) {
 }
 
 if (howToBtn && howToModal) {
-  howToBtn.addEventListener("click", () => openModal(howToModal));
+  howToBtn.addEventListener("click", () => {
+    playSfx("click");
+    openModal(howToModal);
+  });
 }
 if (settingsBtn && settingsModal) {
-  settingsBtn.addEventListener("click", () => openModal(settingsModal));
+  settingsBtn.addEventListener("click", () => {
+    playSfx("click");
+    openModal(settingsModal)
+  });
 }
 if (closeHowToBtn && howToModal) {
   closeHowToBtn.addEventListener("click", () => closeModal(howToModal));
@@ -879,6 +937,7 @@ if (closeSettingsBtn && settingsModal) {
 
 // START SCREEN → GAME
 startBtn.addEventListener("click", () => {
+  playSfx("click");
   hasStarted = true;
 
   homeScreen.classList.remove("screen-active");
@@ -889,6 +948,42 @@ startBtn.addEventListener("click", () => {
 
   restartTimer();
 });
+
+if (endlessBtn) {
+  endlessBtn.addEventListener("click", () => {
+    playSfx("click");
+    const procedural = generateProceduralPattern();
+    patterns.push(procedural);
+    patternIndex = patterns.length - 1;
+    applyPattern(true);
+  });
+}
+
+if (themeBtn) {
+  themeBtn.addEventListener("click", () => {
+    playSfx("click");
+    nextTheme();
+  });
+}
+
+if (modeClassic) {
+  modeClassic.addEventListener("click", () => {
+    playSfx("click");
+    setMode(MODES.CLASSIC);
+  });
+}
+if (modeTimed) {
+  modeTimed.addEventListener("click", () => {
+    playSfx("click");
+    setMode(MODES.TIMED);
+  });
+}
+if (modeMoves) {
+  modeMoves.addEventListener("click", () => {
+    playSfx("click");
+    setMode(MODES.MOVES);
+  });
+}
 
 // BOOT
 createGrid();
