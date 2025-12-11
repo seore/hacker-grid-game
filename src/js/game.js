@@ -4,6 +4,7 @@ const movesLabel = document.getElementById("movesLabel");
 const levelLabel = document.getElementById("levelLabel");
 const patternIndexLabel = document.getElementById("patternIndex");
 const timerDisplay = document.getElementById("timerDisplay");
+const timerChip = document.getElementById("timerChip");
 const difficultyLabel = document.getElementById("difficultyLabel");
 
 const prevBtn = document.getElementById("prevBtn");
@@ -22,9 +23,20 @@ const howToModal = document.getElementById("howToModal");
 const settingsModal = document.getElementById("settingsModal");
 const closeHowToBtn = document.getElementById("closeHowToBtn");
 const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+const modeModal = document.getElementById("modeModal");
+const closeModeModalBtn = document.getElementById("closeModeModalBtn");
 
 const endlessBtn = document.getElementById("endlessBtn");
 const themeBtn = document.getElementById("themeBtn");
+
+const levelListEl = document.getElementById("levelList");
+const openLevelSelectBtn = document.getElementById("openLevelSelect");
+const levelSelectScreen = document.getElementById("levelSelectScreen");
+const closeLevelSelectBtn = document.getElementById("closeLevelSelect");
+
+const openAchievementsBtn = document.getElementById("openAchievementsBtn");
+const achievementsModal = document.getElementById("achievementsModal");
+const closeAchievementsBtn = document.getElementById("closeAchievementsBtn");
 
 const modeClassic = document.getElementById("modeClassicBtn");
 const modeTimed = document.getElementById("modeTimedBtn");
@@ -197,6 +209,56 @@ function randomInt(n) {
   return Math.floor(Math.random() * n);
 }
 
+function startGameWithMode(mode) {
+  setMode(mode);           // uses the existing setMode()
+  hasStarted = true;
+  playSfx("click");
+
+  // hide mode modal + home screen
+  if (modeModal) modeModal.classList.remove("home-modal-open");
+  if (homeScreen) {
+    homeScreen.classList.remove("screen-active");
+    homeScreen.classList.add("screen-hidden");
+  }
+
+  // show game screen
+  if (gameScreen) {
+    gameScreen.classList.remove("screen-hidden");
+    gameScreen.classList.add("screen-active");
+  }
+
+  // reset puzzle & start timer for the chosen mode
+  applyPattern(true);
+}
+
+function refreshAchievementsUI() {
+  if (!achievementsModal) return;
+  const items = achievementsModal.querySelectorAll(".achievement");
+  items.forEach((el) => {
+    const key = el.dataset.key;
+    if (!key) return;
+    if (achievements && achievements[key]) {
+      el.classList.add("unlocked");
+    } else {
+      el.classList.remove("unlocked");
+    }
+  });
+}
+
+if (openAchievementsBtn && achievementsModal) {
+  openAchievementsBtn.addEventListener("click", () => {
+    playSfx("click");
+    refreshAchievementsUI();
+    achievementsModal.classList.add("home-modal-open");
+  });
+}
+
+if (closeAchievementsBtn && achievementsModal) {
+  closeAchievementsBtn.addEventListener("click", () => {
+    achievementsModal.classList.remove("home-modal-open");
+  });
+}
+
 // PROGRESS / ACHIEVEMENTS
 function loadProgress() {
   try {
@@ -275,6 +337,14 @@ function nextTheme() {
 function setMode(mode) {
   currentMode = mode;
   saveSettings();
+
+  if (timerChip) {
+    if (currentMode === MODES.TIMED) {
+      timerChip.style.display = "inline-flex";
+    } else {
+      timerChip.style.display = "none";
+    }
+  }
 }
 
 function saveSettings() {
@@ -398,7 +468,7 @@ function renderTile(tile) {
 }
 
 // GAME THEME & HUD
-function applyTheme(pattern) {
+function applyDifficultyTheme(pattern) {
   document.body.classList.remove("theme-easy", "theme-medium", "theme-hard");
   document.body.classList.add(`theme-${pattern.difficulty}`);
 
@@ -484,6 +554,85 @@ function generateProceduralPattern() {
   };
 }
 
+function renderLevelSelect() {
+  if (!levelListEl) return;
+  if (!progress) {
+    progress = loadProgress();
+  }
+
+  levelListEl.innerHTML = "";
+
+  patterns.forEach((pattern, idx) => {
+    if (pattern.procedural) return; 
+
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "level-card";
+
+    const solved = !progress.solved[idx];
+    const stars = progress.stars[idx] || 0;
+    const locked = idx > 0 && !progress.solved[idx - 1]; // lock if previous not solved
+
+    if (locked) card.classList.add("locked");
+
+    const num = document.createElement("div");
+    num.className = "level-number";
+    num.textContent = `Level ${String(idx + 1).padStart(2, "0")}`;
+    card.appendChild(num);
+
+    const meta = document.createElement("div");
+    meta.className = "level-meta";
+    const bestTime = progress.bestTime[idx];
+    const bestMoves = progress.bestMoves[idx];
+    meta.textContent = solved
+      ? `${bestTime ? bestTime.toFixed(1) + "s" : "--"} • ${bestMoves || "--"} moves`
+      : "Not solved";
+    card.appendChild(meta);
+
+    const starsRow = document.createElement("div");
+    starsRow.className = "level-stars";
+    for (let i = 0; i < 3; i++) {
+      const span = document.createElement("span");
+      span.className = "star" + (i < stars ? " filled" : "");
+      span.textContent = "★";
+      starsRow.appendChild(span);
+    }
+    card.appendChild(starsRow);
+
+    if (!locked) {
+      card.addEventListener("click", () => {
+        playSfx("click");
+        patternIndex = idx;
+        applyPattern(true);
+        if (levelSelectScreen) {
+          levelSelectScreen.classList.add("screen-hidden");
+          levelSelectScreen.classList.remove("screen-active");
+          gameScreen.classList.add("screen-active");
+          gameScreen.classList.remove("screen-hidden");
+        }
+      });
+    }
+
+    levelListEl.appendChild(card);
+  });
+}
+
+if (openLevelSelectBtn && levelSelectScreen) {
+  openLevelSelectBtn.addEventListener("click", () => {
+    playSfx("click");
+    renderLevelSelect();
+    levelSelectScreen.classList.remove("screen-hidden");
+    levelSelectScreen.classList.add("screen-active");
+  });
+}
+if (closeLevelSelectBtn && levelSelectScreen) {
+  closeLevelSelectBtn.addEventListener("click", () => {
+    playSfx("click");
+    levelSelectScreen.classList.add("screen-hidden");
+    levelSelectScreen.classList.remove("screen-active");
+  });
+}
+
 // APPLY PATTERN
 function applyPattern(startTimer = true) {
   const pattern = patterns[patternIndex];
@@ -550,7 +699,7 @@ function applyPattern(startTimer = true) {
     const base = pattern.time || MODE_SETTINGS[MODES.TIMED].baseTime;
     timeRemaining = base;
   } else {
-    timeRemaining = pattern.time || BASE_TIME;
+    timeRemaining = 0;
   }
   updateTimerLabel();
 
@@ -817,13 +966,25 @@ function playSolveAnimation(visitedMap) {
   });
 }
 
-
 // GAME TIMER
 function updateTimerLabel() {
-  timerDisplay.textContent = timeRemaining.toFixed(1) + "s";
+  if (currentMode !== MODES.TIMED) {
+    timerDisplay.textContent = "--";
+  } else {
+    timerDisplay.textContent = timeRemaining.toFixed(1) + "s";
+  }
 }
 
 function restartTimer() {
+  if (currentMode !== MODES.TIMED) {
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+    timerDisplay.textContent = "--";
+    return;
+  }
+
   if (timer) clearInterval(timer);
 
   const start = performance.now();
@@ -936,18 +1097,19 @@ if (closeSettingsBtn && settingsModal) {
 });
 
 // START SCREEN → GAME
-startBtn.addEventListener("click", () => {
-  playSfx("click");
-  hasStarted = true;
+if (startBtn && modeModal) {
+  startBtn.addEventListener("click", () => {
+    playSfx && playSfx("click");
+    modeModal.classList.add("home-modal-open");
+  });
+}
 
-  homeScreen.classList.remove("screen-active");
-  homeScreen.classList.add("screen-hidden");
-
-  gameScreen.classList.remove("screen-hidden");
-  gameScreen.classList.add("screen-active");
-
-  restartTimer();
-});
+// Close icon on mode modal
+if (closeModeModalBtn && modeModal) {
+  closeModeModalBtn.addEventListener("click", () => {
+    modeModal.classList.remove("home-modal-open");
+  });
+}
 
 if (endlessBtn) {
   endlessBtn.addEventListener("click", () => {
@@ -966,25 +1128,26 @@ if (themeBtn) {
   });
 }
 
-if (modeClassic) {
-  modeClassic.addEventListener("click", () => {
-    playSfx("click");
-    setMode(MODES.CLASSIC);
+if (modeClassicStartBtn) {
+  modeClassicStartBtn.addEventListener("click", () => {
+    startGameWithMode(MODES.CLASSIC);
   });
 }
-if (modeTimed) {
-  modeTimed.addEventListener("click", () => {
-    playSfx("click");
-    setMode(MODES.TIMED);
+if (modeTimedStartBtn) {
+  modeTimedStartBtn.addEventListener("click", () => {
+    startGameWithMode(MODES.TIMED);
   });
 }
-if (modeMoves) {
-  modeMoves.addEventListener("click", () => {
-    playSfx("click");
-    setMode(MODES.MOVES);
+if (modeMovesStartBtn) {
+  modeMovesStartBtn.addEventListener("click", () => {
+    startGameWithMode(MODES.MOVES);
   });
 }
 
 // BOOT
+progress = loadProgress();
+achievements = loadAchievements();
+loadSettings();
+
 createGrid();
 applyPattern(false);

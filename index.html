@@ -13,101 +13,225 @@
 </head>
 <body>
   <!-- HOME / TITLE SCREEN -->
-<div id="homeScreen" class="screen screen-active">
-  <div class="home-shell">
-    <div class="home-left">
-      <div class="home-logo-orb"></div>
-      <div class="home-heading-block">
-        <div class="home-kicker">Neon-clean. Brain-sharp.</div>
-        <h1 class="home-game-title">HACK THE GRID</h1>
-        <p class="home-sub">
-          Minimal cyber-puzzle. Rotate circuits, connect nodes, beat the clock.
+  <div id="homeScreen" class="screen screen-active">
+    <div class="home-shell">
+      <div class="home-left">
+        <div class="home-logo-orb"></div>
+        <div class="home-heading-block">
+          <div class="home-kicker">Neon-clean. Brain-sharp.</div>
+          <h1 class="home-game-title">HACK THE GRID</h1>
+          <p class="home-sub">
+            Minimal cyber-puzzle. Rotate circuits, connect nodes, beat the clock.
+          </p>
+        </div>
+      </div>
+
+      <div class="home-right">
+        <div class="home-menu-card">
+          <div class="home-menu-label">Main Console</div>
+          <button id="startBtn" class="btn home-menu-btn primary">
+            ✦ Start Hack
+          </button>
+          <button id="howToBtn" class="btn home-menu-btn">
+            ⌘ How to Play
+          </button>
+          <button id="openLevelSelect" class="btn home-menu-btn">
+            ⬢ Levels
+          </button>
+          <button id="openAchievementsBtn" class="btn home-menu-btn">
+            ★ Achievements
+          </button>
+          <button id="settingsBtn" class="btn home-menu-btn">
+            ⚙ Settings
+          </button>
+        </div>
+
+        <div class="home-build-meta">
+          v0.1 · Prototype
+        </div>
+      </div>
+    </div>
+
+    <!-- HOW TO PLAY MODAL -->
+    <div id="howToModal" class="home-modal">
+      <div class="home-modal-card">
+        <div class="home-modal-header">
+          <h2>How to Play</h2>
+          <button id="closeHowToBtn" class="home-close-btn">✕</button>
+        </div>
+        <ul class="home-modal-list">
+          <li>Green = source node. Pink = target node. They never move.</li>
+          <li>Cyan tiles are the only ones you can rotate.</li>
+          <li>Click a cyan tile to rotate it 90°. Align bars to form one clean path from green to pink.</li>
+          <li>Beat the timer. Fewer moves = cleaner hack.</li>
+        </ul>
+        <p class="home-modal-footer">
+          Tip: watch the neon flow when you solve a pattern – that’s the data stream you just hijacked.
         </p>
       </div>
     </div>
 
-    <div class="home-right">
-      <div class="home-menu-card">
-        <div class="home-menu-label">Main Console</div>
-        <button id="startBtn" class="btn home-menu-btn primary">
-          ✦ Start Hack
-        </button>
-        <button id="howToBtn" class="btn home-menu-btn">
-          ⌘ How to Play
-        </button>
-        <button id="settingsBtn" class="btn home-menu-btn">
-          ⚙ Settings
-        </button>
-      </div>
-
-      <div class="home-build-meta">
-        v0.1 · Prototype · Made with HTML, CSS &amp; JavaScript
-      </div>
+    <!-- GAME MODE SELECT MODAL -->
+<div id="modeModal" class="home-modal">
+  <div class="home-modal-card">
+    <div class="home-modal-header">
+      <h2>Select Game Mode</h2>
+      <button id="closeModeModalBtn" class="home-close-btn">✕</button>
     </div>
-  </div>
 
-  <!-- HOW TO PLAY MODAL -->
-  <div id="howToModal" class="home-modal">
-    <div class="home-modal-card">
-      <div class="home-modal-header">
-        <h2>How to Play</h2>
-        <button id="closeHowToBtn" class="home-close-btn">✕</button>
+    <p class="home-modal-footer" style="margin-bottom:0.6rem;">
+      Choose how you want to hack. You can change modes anytime in Settings.
+    </p>
+
+    <div class="home-setting-row">
+      <span>Modes</span>
+      <div class="home-setting-pills">
+        <button id="modeClassicStartBtn" class="pill pill-mini pill-on">
+          Classic
+        </button>
+        <button id="modeTimedStartBtn" class="pill pill-mini">
+          Timed
+        </button>
+        <button id="modeMovesStartBtn" class="pill pill-mini">
+          Moves
+        </button>
       </div>
-      <ul class="home-modal-list">
-        <li>Green = source node. Pink = target node. They never move.</li>
-        <li>Cyan tiles are the only ones you can rotate.</li>
-        <li>Click a cyan tile to rotate it 90°. Align bars to form one clean path from green to pink.</li>
-        <li>Beat the timer. Fewer moves = cleaner hack.</li>
-      </ul>
-      <p class="home-modal-footer">
-        Tip: watch the neon flow when you solve a pattern – that’s the data stream you just hijacked.
-      </p>
-    </div>
-  </div>
-
-  <!-- SETTINGS MODAL -->
-  <div id="settingsModal" class="home-modal">
-    <div class="home-modal-card">
-      <div class="home-modal-header">
-        <h2>Settings</h2>
-        <button id="closeSettingsBtn" class="home-close-btn">✕</button>
-      </div>
-
-      <div class="home-setting-row">
-        <span>Difficulty Theme</span>
-        <div class="home-setting-pills">
-          <span class="pill pill-mini pill-on">Easy</span>
-          <span class="pill pill-mini">Medium</span>
-          <span class="pill pill-mini">Hard</span>
-        </div>
-      </div>
-
-      <div class="home-setting-row">
-        <span>Music</span>
-        <div class="home-slider-shell">
-          <div class="home-slider-track">
-            <div class="home-slider-thumb"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="home-setting-row">
-        <span>FX</span>
-        <div class="home-slider-shell">
-          <div class="home-slider-track">
-            <div class="home-slider-thumb"></div>
-          </div>
-        </div>
-      </div>
-
-      <p class="home-modal-footer">
-        Settings are cosmetic for now – wire them into your audio / difficulty
-        logic when you’re ready.
-      </p>
     </div>
   </div>
 </div>
 
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="home-modal">
+      <div class="home-modal-card">
+        <div class="home-modal-header">
+          <h2>Settings</h2>
+          <button id="closeSettingsBtn" class="home-close-btn">✕</button>
+        </div>
+
+        <div class="home-setting-row">
+          <span>Difficulty Theme</span>
+          <div class="home-setting-pills">
+            <span class="pill pill-mini pill-on">Easy</span>
+            <span class="pill pill-mini">Medium</span>
+            <span class="pill pill-mini">Hard</span>
+          </div>
+        </div>
+
+        <div class="home-setting-row">
+          <span>Game Mode</span>
+          <div class="home-setting-pills">
+            <button id="modeClassicBtn" class="pill pill-mini pill-on">Classic</button>
+            <button id="modeTimedBtn" class="pill pill-mini">Timed</button>
+            <button id="modeMovesBtn" class="pill pill-mini">Moves</button>
+          </div>
+        </div>
+
+        <div class="home-setting-row">
+          <span>Theme</span>
+          <div class="home-setting-pills">
+            <button id="themeBtn" class="pill pill-mini">Cycle Themes</button>
+          </div>
+        </div>
+
+        <div class="home-setting-row">
+          <span>Music</span>
+          <div class="home-slider-shell">
+            <div class="home-slider-track">
+              <div class="home-slider-thumb"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-setting-row">
+          <span>FX</span>
+          <div class="home-slider-shell">
+            <div class="home-slider-track">
+              <div class="home-slider-thumb"></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="home-modal-footer">
+          Settings are cosmetic for now – wire them into your audio / difficulty
+          logic when you’re ready.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVEL SELECT SCREEN -->
+  <div id="levelSelectScreen" class="screen screen-hidden">
+    <div class="level-select-shell">
+      <div class="level-select-header">
+        <h2>Level Grid</h2>
+        <button id="closeLevelSelect" class="btn btn-secondary">Back</button>
+      </div>
+      <div id="levelList" class="level-list">
+        <!-- JS populates level cards here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ACHIEVEMENTS MODAL -->
+  <div id="achievementsModal" class="home-modal">
+    <div class="home-modal-card achievements-card">
+      <div class="home-modal-header">
+        <h2>Achievements</h2>
+        <button id="closeAchievementsBtn" class="home-close-btn">✕</button>
+      </div>
+
+      <div class="achievement-grid">
+        <div class="achievement" data-key="speedrunner1">
+          <div class="achievement-icon">⚡</div>
+          <div class="achievement-text">
+            <h3>Speedrunner I</h3>
+            <p>Solve any level in under 20s.</p>
+          </div>
+        </div>
+
+        <div class="achievement" data-key="speedrunner2">
+          <div class="achievement-icon">⚡</div>
+          <div class="achievement-text">
+            <h3>Speedrunner II</h3>
+            <p>Solve any level in under 10s.</p>
+          </div>
+        </div>
+
+        <div class="achievement" data-key="efficiency1">
+          <div class="achievement-icon">🎯</div>
+          <div class="achievement-text">
+            <h3>Efficiency I</h3>
+            <p>Finish a level in 12 moves or fewer.</p>
+          </div>
+        </div>
+
+        <div class="achievement" data-key="efficiency2">
+          <div class="achievement-icon">🎯</div>
+          <div class="achievement-text">
+            <h3>Efficiency II</h3>
+            <p>Finish a level in 8 moves or fewer.</p>
+          </div>
+        </div>
+
+        <div class="achievement" data-key="perfectPath">
+          <div class="achievement-icon">✨</div>
+          <div class="achievement-text">
+            <h3>Perfect Path</h3>
+            <p>Solve a level without shuffling.</p>
+          </div>
+        </div>
+
+        <div class="achievement" data-key="allCleared">
+          <div class="achievement-icon">🏆</div>
+          <div class="achievement-text">
+            <h3>Neon Architect</h3>
+            <p>Earn 3★ on all core levels.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- MAIN GAME SCREEN -->
   <div id="gameScreen" class="screen screen-hidden">
@@ -167,6 +291,9 @@
                 <button class="btn btn-secondary" id="nextBtn">
                   <span>Next</span> ▶
                 </button>
+                <button class="btn btn-secondary" id="endlessBtn">
+                  ∞ <span>Endless</span>
+                </button>
               </div>
               <div class="hint-text">
                 Click cyan tiles to rotate. Green &amp; pink nodes stay locked.
@@ -200,18 +327,23 @@
                 </li>
               </ul>
 
-              <div class="timer-chip">
+              <div class="timer-chip" id="timerChip">
                 <div>
                   <div class="timer-chip-label">Time Left</div>
                   <div class="timer-display" id="timerDisplay">60.0s</div>
                 </div>
-                <button class="btn btn-danger" id="restartBtn" style="font-size:0.7rem;padding:0.25rem 0.7rem;">
+                <button
+                  class="btn btn-danger"
+                  id="restartBtn"
+                  style="font-size:0.7rem;padding:0.25rem 0.7rem;"
+                >
                   Reset
                 </button>
               </div>
 
               <div class="footer-note">
-                Made with <span>HTML</span>, <span>CSS</span> &amp; <span>JavaScript</span>.
+                <span id="openLevelSelect" class="footer-link">⯈ Level Select</span> ·
+                <span id="openAchievementsBtn" class="footer-link">★ Achievements</span>
               </div>
             </div>
           </aside>
