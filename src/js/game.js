@@ -23,11 +23,17 @@ const settingsModal = document.getElementById("settingsModal");
 const closeHowToBtn = document.getElementById("closeHowToBtn");
 const closeSettingsBtn = document.getElementById("closeSettingsBtn");
 
+const endlessBtn = document.getElementById("endlessBtn");
+const themeBtn = document.getElementById("themeBtn");
+
+const modeClassic = document.getElementById("modeClassicBtn");
+const modeTimed = document.getElementById("modeTimedBtn");
+const modeMoves = document.getElementById("modeMovesBtn");
+
 // CONSTANTS
 const GRID_SIZE = 5;
 const BASE_TIME = 60;
 
-// direction bits
 const DIR = {
   UP: 1,
   RIGHT: 2,
@@ -50,8 +56,66 @@ let timeRemaining = BASE_TIME;
 let hasStarted = false;
 let isSolved = false;
 
+// GAME MODES
+const MODES = {
+  CLASSIC: "classic",
+  TIMED: "timed",
+  MOVES: "moves"
+};
+
+let currentMode = MODES.CLASSIC;
+
+const MODE_SETTINGS = {
+  [MODES.TIMED]: {
+    baseTime: 60
+  },
+  [MODES.MOVES]: {
+    moveLimit: 12
+  }
+};
+
+// STORAGE KEYS
+const STORAGE_KEYS = {
+  PROGRESS: "hackGrid_progress_v1",
+  ACHIEVEMENTS: "hackGrid_achievements_v1",
+  SETTINGS: "hackGrid_settings_v1"
+};
+
+let progress = null;
+let achievements = null;
+
+// GAME THEMES
+const THEMES = ["neon", "vapor", "matrix"];
+let currentThemeIndex = 0;
+
+let usedShuffleThisRun = false;
+
+// GAME AUDIO
+const SFX = {
+  rotate: new Audio("sfx/rotate.wav"),
+  solved: new Audio("sfx/solved.wav"),
+  fail:   new Audio("sfx/fail.wav"),
+  click:  new Audio("sfx/click.wav")
+};
+
+function playSfx(name) {
+  const snd = SFX[name];
+  if (!snd) return;
+  snd.currentTime = 0;
+  snd.play().catch(() => {});
+}
+
+function lerpColor(c1, c2, t) {
+  const r = Math.round(c1.r + (c2.r - c1.r) * t);
+  const g = Math.round(c1.g + (c2.g - c1.g) * t);
+  const b = Math.round(c1.b + (c2.b - c1.b) * t);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+const START_COLOR = { r: 34, g: 197, b: 94 };
+const END_COLOR = { r: 236, g: 72,  b: 153 };
+
 // LEVEL DATA
-// NOTE: we use `targets: []` so you can have multiple bulbs if you want
 const patterns = [
   {
     name: "01 · Circuit Intro",
@@ -60,15 +124,16 @@ const patterns = [
     start: 0,
     targets: [22],
     tiles: {
-      0:  DIR.DOWN,                   // start
-      5:  DIR.UP | DIR.DOWN,          // vertical
-      10: DIR.UP | DIR.RIGHT,         // L-curve
-      11: DIR.LEFT | DIR.RIGHT,       // horizontal
-      12: DIR.LEFT | DIR.DOWN,        // L-curve
-      17: DIR.UP | DIR.DOWN,          // vertical
-      22: DIR.UP                      // target
+      0:  DIR.DOWN,                   
+      5:  DIR.UP | DIR.DOWN,          
+      10: DIR.UP | DIR.RIGHT,         
+      11: DIR.LEFT | DIR.RIGHT,       
+      12: DIR.LEFT | DIR.DOWN,        
+      17: DIR.UP | DIR.DOWN,          
+      22: DIR.UP                      
     },
-    locked: [0, 22]
+    locked: [0, 22],
+    maxMoves: 14
   },
 
   {
@@ -78,21 +143,22 @@ const patterns = [
     start: 0,
     targets: [24],
     tiles: {
-      0:  DIR.RIGHT,                  // 0 → 1
-      1:  DIR.LEFT | DIR.RIGHT,       // 0 ↔ 2
-      2:  DIR.LEFT | DIR.DOWN,        // 1 ↘ 7
-      7:  DIR.UP | DIR.DOWN,          // 2 ↕ 12
-      12: DIR.UP | DIR.DOWN,          // 7 ↕ 17
-      17: DIR.UP | DIR.RIGHT,         // 12 ↘ 18
-      18: DIR.LEFT | DIR.RIGHT,       // 17 ↔ 19
-      19: DIR.LEFT | DIR.DOWN,        // 18 ↘ 24
-      24: DIR.UP                      // 19 ↑
+      0:  DIR.RIGHT,                  
+      1:  DIR.LEFT | DIR.RIGHT,       
+      2:  DIR.LEFT | DIR.DOWN,       
+      7:  DIR.UP | DIR.DOWN,          
+      12: DIR.UP | DIR.DOWN,          
+      17: DIR.UP | DIR.RIGHT,         
+      18: DIR.LEFT | DIR.RIGHT,    
+      19: DIR.LEFT | DIR.DOWN,        
+      24: DIR.UP                      
     },
-    locked: [0, 24]
+    locked: [0, 24],
+    maxMoves: 16
   }
 ];
 
-// HELPERS
+// GAME HELPERS
 function idxToRC(i) {
   return [Math.floor(i / GRID_SIZE), i % GRID_SIZE];
 }
@@ -421,16 +487,6 @@ function checkSolved() {
 
   playSolveAnimation(visited);
 }
-
-function lerpColor(c1, c2, t) {
-  const r = Math.round(c1.r + (c2.r - c1.r) * t);
-  const g = Math.round(c1.g + (c2.g - c1.g) * t);
-  const b = Math.round(c1.b + (c2.b - c1.b) * t);
-  return `rgb(${r}, ${g}, ${b})`;
-}
-
-const START_COLOR = { r: 34, g: 197, b: 94 };
-const END_COLOR = { r: 236, g: 72,  b: 153 };
 
 // SOLUTION ANIMATION
 function playSolveAnimation(visitedMap) {
