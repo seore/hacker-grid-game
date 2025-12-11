@@ -193,6 +193,72 @@ function isStraight(mask) {
   );
 }
 
+function randomInt(n) {
+  return Math.floor(Math.random() * n);
+}
+
+// PROGRESS / ACHIEVEMENTS
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.PROGRESS);
+    if (!raw) {
+      const base = { solved: {}, stars: {}, bestTime: {}, bestMoves: {} };
+      patterns.forEach((_, idx) => {
+        base.solved[idx] = false;
+        base.stars[idx] = 0;
+      });
+      return base;
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn("Failed to load progress", e);
+    return { solved: {}, stars: {}, bestTime: {}, bestMoves: {} };
+  }
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(progress));
+  } catch (e) {
+    console.warn("Failed to save progress", e);
+  }
+}
+
+function loadAchievements() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.ACHIEVEMENTS);
+    if (!raw) {
+      return {
+        speedrunner1: false,
+        speedrunner2: false,
+        efficiency1: false,
+        efficiency2: false,
+        perfectPath: false,
+        allCleared: false
+      };
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn("Failed to load achievements", e);
+    return {
+      speedrunner1: false,
+      speedrunner2: false,
+      efficiency1: false,
+      efficiency2: false,
+      perfectPath: false,
+      allCleared: false
+    };
+  }
+}
+
+function saveAchievements() {
+  try {
+    localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(achievements));
+  } catch (e) {
+    console.warn("Failed to save achievements", e);
+  }
+}
+
 // GRID CREATION
 function createGrid() {
   gridElement.innerHTML = "";
