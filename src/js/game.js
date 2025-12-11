@@ -350,7 +350,6 @@ function createGrid() {
     };
 
     tileEl.addEventListener("click", () => onTileClick(tile));
-
     tiles.push(tile);
   }
 }
@@ -398,7 +397,7 @@ function renderTile(tile) {
   }
 }
 
-// THEME / HUD
+// GAME THEME & HUD
 function applyTheme(pattern) {
   document.body.classList.remove("theme-easy", "theme-medium", "theme-hard");
   document.body.classList.add(`theme-${pattern.difficulty}`);
@@ -407,13 +406,91 @@ function applyTheme(pattern) {
     pattern.difficulty.charAt(0).toUpperCase() + pattern.difficulty.slice(1);
 }
 
+// PROCEDURAL GENERATOR
+function generateProceduralPattern() {
+  const size = GRID_SIZE;
+  const total = size * size;
+
+  const start = randomInt(total);
+  let end = randomInt(total);
+  while (end === start) end = randomInt(total);
+
+  const visited = new Set([start]);
+  const path = [start];
+  let current = start;
+
+  let safety = 200;
+  while (current !== end && safety-- > 0) {
+    const [r, c] = idxToRC(current);
+
+    const candidates = [];
+    for (const d of ALL_DIRS) {
+      const nr = r + d.dr;
+      const nc = c + d.dc;
+      if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
+      const ni = nr * size + nc;
+      if (visited.has(ni) && ni !== end) continue;
+      candidates.push(ni);
+    }
+
+    if (candidates.length === 0) break;
+    const ni = candidates[randomInt(candidates.length)];
+    current = ni;
+    visited.add(current);
+    path.push(current);
+  }
+
+  if (current !== end) {
+    path.push(end);
+  }
+
+  const tilesMap = {};
+  for (let i = 0; i < path.length; i++) {
+    const idx = path[i];
+    let mask = 0;
+
+    if (i > 0) {
+      const prevIdx = path[i - 1];
+      const [r, c] = idxToRC(idx);
+      const [pr, pc] = idxToRC(prevIdx);
+      if (pr < r) mask |= DIR.UP;
+      if (pr > r) mask |= DIR.DOWN;
+      if (pc < c) mask |= DIR.LEFT;
+      if (pc > c) mask |= DIR.RIGHT;
+    }
+    if (i < path.length - 1) {
+      const nextIdx = path[i + 1];
+      const [r, c] = idxToRC(idx);
+      const [nr, nc] = idxToRC(nextIdx);
+      if (nr < r) mask |= DIR.UP;
+      if (nr > r) mask |= DIR.DOWN;
+      if (nc < c) mask |= DIR.LEFT;
+      if (nc > c) mask |= DIR.RIGHT;
+    }
+
+    tilesMap[idx] = mask;
+  }
+
+  return {
+    name: "∞ Endless Grid",
+    difficulty: "medium",
+    time: 60,
+    start,
+    targets: [end],
+    tiles: tilesMap,
+    locked: [start, end],
+    procedural: true,
+    maxMoves: 20
+  };
+}
+
 // APPLY PATTERN
 function applyPattern(startTimer = true) {
   const pattern = patterns[patternIndex];
 
   patternIndexLabel.textContent = String(patternIndex + 1).padStart(2, "0");
   levelLabel.textContent = pattern.name;
-  applyTheme(pattern);
+  applyDifficultyTheme(pattern);
 
   const lockedSet = new Set(pattern.locked || []);
   const targetSet = new Set(pattern.targets || []);
@@ -431,6 +508,7 @@ function applyPattern(startTimer = true) {
 
     tile.straight.style.display = "none";
     tile.curve.style.display = "none";
+    tile.element.style.removeProperty("--solved-color");
   });
 
   // place pattern tiles
@@ -445,6 +523,7 @@ function applyPattern(startTimer = true) {
 
     tile.element.classList.remove("inactive");
     tile.element.classList.add("active-blue");
+    tile.element.classList.add("movable");
 
     if (idx === pattern.start) {
       tile.element.classList.remove("active-blue");
@@ -457,7 +536,6 @@ function applyPattern(startTimer = true) {
     }
 
     tile.movable = !lockedSet.has(idx);
-
     renderTile(tile);
   });
 
@@ -466,8 +544,17 @@ function applyPattern(startTimer = true) {
 
   moves = 0;
   movesLabel.textContent = "0";
-  timeRemaining = pattern.time || BASE_TIME;
+
+  // timer behaviour by game mode
+  if (currentMode === MODES.TIMED) {
+    const base = pattern.time || MODE_SETTINGS[MODES.TIMED].baseTime;
+    timeRemaining = base;
+  } else {
+    timeRemaining = pattern.time || BASE_TIME;
+  }
   updateTimerLabel();
+
+  usedShuffleThisRun = false;
 
   if (startTimer && hasStarted) {
     restartTimer();
@@ -502,11 +589,20 @@ function onTileClick(tile) {
 
   moves++;
   movesLabel.textContent = moves;
+  playSfx("rotate");
+
+  if (currentMode === MODES.MOVES) {
+    const limit = getMoveLimitForPattern(patternIndex)
+    if (moves > limit && !isSolved) {
+      flashTimeout();
+      playSfx("fail");
+    }
+  }
 
   checkSolved();
 }
 
-// BUILD ADJACENCY (local validity)
+// BUILD ADJACENCY 
 function buildAdjacency(masks, activeSet) {
   const adjacency = new Map();
   activeSet.forEach((idx) => adjacency.set(idx, []));
@@ -524,18 +620,18 @@ function buildAdjacency(masks, activeSet) {
       const nc = c + d.dc;
 
       if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) {
-        return null; // open end off-board
+        return null; 
       }
 
       const ni = nr * GRID_SIZE + nc;
       const neighbourMask = masks[ni];
 
       if (!activeSet.has(ni)) {
-        return null; // connects into non-wire
+        return null; 
       }
 
       if (!neighbourMask || !(neighbourMask & d.opposite)) {
-        return null; // neighbour doesn't connect back
+        return null; 
       }
 
       adjacency.get(idx).push(ni);
