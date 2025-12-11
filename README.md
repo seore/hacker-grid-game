@@ -49,10 +49,10 @@ Your goal: rotate L-shaped and straight pipe tiles to create a perfect data conn
 ---
 ## 📸 Preview
 <img width="1299" height="792" alt="gameScreen" src="https://github.com/user-attachments/assets/2e0ff823-abb6-47dc-8095-7c7bd4e39d70" />
-<img width="1293" height="784" alt="homeScreen" src="https://github.com/user-attachments/assets/63a5ae99-6d0b-42de-983e-2731a4db1d63" />
-<img width="870" height="375" alt="levelsModal" src="https://github.com/user-attachments/assets/51222366-dce7-4e71-838a-b400297ccd21" />
-<img width="506" height="358" alt="settingModal" src="https://github.com/user-attachments/assets/ec91de29-fdb6-450a-a203-8cfd421135fa" />
 
+<img width="1293" height="784" alt="homeScreen" src="https://github.com/user-attachments/assets/63a5ae99-6d0b-42de-983e-2731a4db1d63" />
+
+<img width="870" height="375" alt="levelsModal" src="https://github.com/user-attachments/assets/51222366-dce7-4e71-838a-b400297ccd21" />
 
 ---
 
